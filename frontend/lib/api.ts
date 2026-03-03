@@ -201,105 +201,156 @@ export const estimatingApi = {
   getScopeGapReport: (id: number) => request<{ score: number; items: ScopeGap[] }>(`/estimating/${id}/scope-gap-report`),
 };
 
-// ── Intelligence Types ──────────────────────────────────────────────────────
+// ── Intelligence Types ─────────────────────────────────────────────────────
 
 export interface ExecutiveProfile {
+  id: number;
+  company_intel_id: number;
   name: string;
-  role: string;
+  role?: string;
+  professional_focus?: string;
+  public_interests?: string;
+  recent_interviews?: string;
+  conference_appearances?: string;
+  charity_involvement?: string;
   communication_style?: string;
-  conversation_angles?: string[];
+  conversation_angles?: string;
+  created_at?: string;
 }
 
-export interface CompanyIntelligence {
+export interface NewsItem {
   id: number;
-  account_id?: number;
+  company_intel_id?: number;
+  title: string;
+  summary?: string;
+  source_url?: string;
+  category: string;
+  company_name?: string;
+  published_at?: string;
+  detected_at?: string;
+}
+
+export interface CompanyIntel {
+  id: number;
   website: string;
   company_name?: string;
-  status: string;
   business_model?: string;
-  locations?: string[];
-  expansion_signals?: string[];
-  technology_growth_indicators?: string[];
-  financial_health_summary?: string;
-  competitor_mentions?: string[];
-  strategic_risk_factors?: string[];
-  potential_bid_opportunities?: string[];
-  executive_profiles?: ExecutiveProfile[];
+  locations?: string;
+  expansion_signals?: string;
+  technology_indicators?: string;
+  financial_summary?: string;
+  earnings_highlights?: string;
+  competitor_mentions?: string;
+  strategic_risks?: string;
+  bid_opportunities?: string;
+  created_at?: string;
+  executives?: ExecutiveProfile[];
+  news_items?: NewsItem[];
+}
+
+export interface CompanyIntelSummary {
+  id: number;
+  website: string;
+  company_name?: string;
   created_at?: string;
 }
 
-export interface Blog {
+export interface BlogPost {
   id: number;
-  intelligence_id?: number;
-  title?: string;
-  status: string;
-  seo_meta_description?: string;
-  body_markdown?: string;
+  company_intel_id?: number;
+  title: string;
+  slug: string;
+  body_markdown: string;
+  meta_description?: string;
+  seo_keywords?: string;
   linkedin_variant?: string;
   x_variant?: string;
+  status: string;
+  published_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BlogPostSummary {
+  id: number;
+  title: string;
+  slug: string;
+  status: string;
   created_at?: string;
 }
 
-export interface IntelPhoto {
+export interface UploadedPhoto {
   id: number;
-  intelligence_id?: number;
-  account_id?: number;
   filename: string;
-  photo_type?: string;
-  ai_analysis?: Record<string, unknown>;
+  original_filename: string;
+  storage_path: string;
+  content_type?: string;
+  size_bytes?: number;
+  alt_text?: string;
+  ai_description?: string;
+  company_intel_id?: number;
+  bid_id?: number;
   uploaded_at?: string;
 }
 
-export interface IntelDashboard {
-  expansion_signals?: unknown[];
-  earnings_insights?: unknown[];
-  competitive_activity?: unknown[];
-  executive_activity?: unknown[];
-  ai_investment_indicators?: unknown[];
-}
-
-// ── Intelligence ───────────────────────────────────────────────────────────
-
-// Intel routes live at /api/intel/... (outside the /api/v1 prefix)
-const API_ORIGIN = BASE_URL.replace(/\/api\/v\d+$/, '');
-const INTEL_BASE = `${API_ORIGIN}/api/intel`;
-
-async function intelReq<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${INTEL_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    ...options,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API error ${res.status}: ${text}`);
-  }
-  return res.json() as Promise<T>;
-}
+// ── Intelligence API ───────────────────────────────────────────────────────
 
 export const intelApi = {
-  researchCompany: (data: { website: string; account_id?: number }) =>
-    intelReq<CompanyIntelligence>('/company', { method: 'POST', body: JSON.stringify(data) }),
-  getCompanyIntelligence: (id: number) =>
-    intelReq<CompanyIntelligence>(`/company/${id}`),
-  listCompanyIntelligence: () =>
-    intelReq<CompanyIntelligence[]>('/company'),
-  generateBlog: (intelligenceId: number) =>
-    intelReq<Blog>(`/company/${intelligenceId}/blog`, { method: 'POST' }),
-  listBlogs: () =>
-    intelReq<Blog[]>('/blogs'),
-  getBlog: (id: number) =>
-    intelReq<Blog>(`/blogs/${id}`),
-  approveBlog: (id: number) =>
-    intelReq<Blog>(`/blogs/${id}/approve`, { method: 'PUT' }),
-  uploadPhoto: (file: File, intelligenceId?: number, accountId?: number): Promise<IntelPhoto> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (intelligenceId) formData.append('intelligence_id', String(intelligenceId));
-    if (accountId) formData.append('account_id', String(accountId));
-    return fetch(`${API_ORIGIN}/api/intel/photos/upload`, { method: 'POST', body: formData }).then(r => r.json()) as Promise<IntelPhoto>;
+  researchCompany: (website: string) =>
+    request<CompanyIntel>('/intel/company', { method: 'POST', body: JSON.stringify({ website }) }),
+  listCompanies: () => request<CompanyIntelSummary[]>('/intel/companies'),
+  getCompany: (id: number) => request<CompanyIntel>(`/intel/companies/${id}`),
+  deleteCompany: (id: number) => request<void>(`/intel/companies/${id}`, { method: 'DELETE' }),
+  listNews: (company_intel_id?: number) =>
+    request<NewsItem[]>(`/intel/news${company_intel_id ? `?company_intel_id=${company_intel_id}` : ''}`),
+  createNews: (data: Partial<NewsItem>) =>
+    request<NewsItem>('/intel/news', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Blog API ───────────────────────────────────────────────────────────────
+
+export const blogApi = {
+  generate: (data: {
+    topic: string;
+    company_intel_id?: number;
+    tone?: string;
+    target_persona?: string;
+    word_count?: number;
+    seo_keywords?: string;
+    cta?: string;
+  }) => request<BlogPost>('/blog/generate', { method: 'POST', body: JSON.stringify(data) }),
+  list: (status?: string) =>
+    request<BlogPostSummary[]>(`/blog${status ? `?status_filter=${status}` : ''}`),
+  get: (id: number) => request<BlogPost>(`/blog/${id}`),
+  update: (id: number, data: Partial<BlogPost>) =>
+    request<BlogPost>(`/blog/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  approve: (id: number) => request<BlogPost>(`/blog/${id}/approve`, { method: 'POST' }),
+  publish: (id: number) => request<BlogPost>(`/blog/${id}/publish`, { method: 'POST' }),
+  delete: (id: number) => request<void>(`/blog/${id}`, { method: 'DELETE' }),
+};
+
+// ── Uploads API ────────────────────────────────────────────────────────────
+
+export const uploadsApi = {
+  uploadPhoto: (file: File, opts?: { alt_text?: string; company_intel_id?: number; bid_id?: number }) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (opts?.alt_text) form.append('alt_text', opts.alt_text);
+    if (opts?.company_intel_id) form.append('company_intel_id', String(opts.company_intel_id));
+    if (opts?.bid_id) form.append('bid_id', String(opts.bid_id));
+    return fetch(`${BASE_URL}/uploads/photos`, { method: 'POST', body: form }).then(async (res) => {
+      if (!res.ok) throw new Error(`Upload failed: ${await res.text()}`);
+      return res.json() as Promise<UploadedPhoto>;
+    });
   },
-  listPhotos: () =>
-    intelReq<IntelPhoto[]>('/photos'),
-  getIntelDashboard: () =>
-    intelReq<IntelDashboard>('/dashboard'),
+  list: (opts?: { company_intel_id?: number; bid_id?: number }) => {
+    const params = new URLSearchParams();
+    if (opts?.company_intel_id) params.set('company_intel_id', String(opts.company_intel_id));
+    if (opts?.bid_id) params.set('bid_id', String(opts.bid_id));
+    const qs = params.toString() ? `?${params}` : '';
+    return request<UploadedPhoto[]>(`/uploads/photos${qs}`);
+  },
+  get: (id: number) => request<UploadedPhoto>(`/uploads/photos/${id}`),
+  fileUrl: (id: number) => `${BASE_URL}/uploads/photos/${id}/file`,
+  delete: (id: number) => request<void>(`/uploads/photos/${id}`, { method: 'DELETE' }),
 };

@@ -5,13 +5,14 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: '⊞' },
+  { href: '/dashboard', label: 'Dashboard', icon: '⊞' },
   { href: '/accounts', label: 'Accounts', icon: '🏢' },
   { href: '/opportunities', label: 'Opportunities', icon: '🎯' },
   { href: '/bids', label: 'Bids', icon: '📋' },
   { href: '/estimating', label: 'Estimating', icon: '📐' },
-  { href: '/intelligence', label: 'Intelligence', icon: '🧠' },
+  { href: '/intel', label: 'Intelligence', icon: '🔍' },
   { href: '/blog', label: 'Blog', icon: '✍️' },
+  { href: '/photos', label: 'Photos', icon: '🖼️' },
 ];
 
 export default function Sidebar() {
@@ -56,7 +57,7 @@ export default function Sidebar() {
         <nav className="flex-1 py-4 overflow-y-auto">
           {navItems.map((item) => {
             const isActive =
-              item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+              item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}

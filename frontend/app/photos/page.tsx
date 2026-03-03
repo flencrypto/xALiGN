@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
-import { intelApi, IntelPhoto } from '@/lib/api';
+import { uploadsApi, UploadedPhoto } from '@/lib/api';
 
 export default function PhotosPage() {
-  const [photos, setPhotos] = useState<IntelPhoto[]>([]);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState<File | null>(null);
-  const [intelligenceId, setIntelligenceId] = useState('');
+  const [altText, setAltText] = useState('');
+  const [companyIntelId, setCompanyIntelId] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
 
   useEffect(() => {
-    intelApi.listPhotos().then(setPhotos).catch(console.error).finally(() => setLoading(false));
+    uploadsApi.list().then(setPhotos).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   async function handleUpload(e: React.FormEvent) {
@@ -23,11 +24,14 @@ export default function PhotosPage() {
     setUploading(true);
     setUploadError('');
     try {
-      const intelIdNum = intelligenceId ? parseInt(intelligenceId, 10) : undefined;
-      const photo = await intelApi.uploadPhoto(file, intelIdNum);
+      const photo = await uploadsApi.uploadPhoto(file, {
+        alt_text: altText || undefined,
+        company_intel_id: companyIntelId ? parseInt(companyIntelId, 10) : undefined,
+      });
       setPhotos((prev) => [photo, ...prev]);
       setFile(null);
-      setIntelligenceId('');
+      setAltText('');
+      setCompanyIntelId('');
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -54,12 +58,22 @@ export default function PhotosPage() {
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-xs mb-1">Intelligence ID (optional)</label>
+              <label className="block text-slate-400 text-xs mb-1">Alt Text (optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. Site photo"
+                value={altText}
+                onChange={(e) => setAltText(e.target.value)}
+                className="w-40 bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs mb-1">Company Intel ID (optional)</label>
               <input
                 type="number"
                 placeholder="e.g. 1"
-                value={intelligenceId}
-                onChange={(e) => setIntelligenceId(e.target.value)}
+                value={companyIntelId}
+                onChange={(e) => setCompanyIntelId(e.target.value)}
                 className="w-36 bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -94,11 +108,11 @@ export default function PhotosPage() {
                   <span className="text-4xl">🖼️</span>
                 </div>
                 <div className="p-3">
-                  <p className="text-white text-sm font-medium truncate">{photo.filename}</p>
+                  <p className="text-white text-sm font-medium truncate">{photo.original_filename}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    {photo.photo_type && (
+                    {photo.content_type && (
                       <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs border border-blue-500/30">
-                        {photo.photo_type}
+                        {photo.content_type}
                       </span>
                     )}
                     {photo.uploaded_at && (
@@ -107,18 +121,18 @@ export default function PhotosPage() {
                       </span>
                     )}
                   </div>
-                  {photo.ai_analysis && (
+                  {photo.ai_description && (
                     <div className="mt-2">
                       <button
                         onClick={() => setExpanded(expanded === photo.id ? null : photo.id)}
                         className="text-blue-400 hover:text-blue-300 text-xs"
                       >
-                        {expanded === photo.id ? '▲ Hide AI Analysis' : '▼ AI Analysis'}
+                        {expanded === photo.id ? '▲ Hide AI Description' : '▼ AI Description'}
                       </button>
                       {expanded === photo.id && (
-                        <pre className="mt-2 text-xs text-slate-300 bg-slate-700/50 rounded p-2 overflow-auto max-h-32">
-                          {JSON.stringify(photo.ai_analysis, null, 2)}
-                        </pre>
+                        <p className="mt-2 text-xs text-slate-300 bg-slate-700/50 rounded p-2">
+                          {photo.ai_description}
+                        </p>
                       )}
                     </div>
                   )}

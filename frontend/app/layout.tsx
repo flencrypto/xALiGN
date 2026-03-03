@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Sidebar from "@/components/layout/Sidebar";
 
 export const metadata: Metadata = {
   title: "ContractGHOST",
@@ -14,13 +13,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-slate-900 text-white antialiased font-sans">
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <main className="flex-1 flex flex-col overflow-auto">
-            {children}
-          </main>
-        </div>
+      <body className="bg-slate-950 text-white antialiased font-sans">
+        {children}
       </body>
     </html>
   );
