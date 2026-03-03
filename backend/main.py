@@ -17,10 +17,12 @@ from backend.routers.accounts import contacts_router, router as accounts_router
 from backend.routers.accounts import signals_router
 from backend.routers.bids import router as bids_router
 from backend.routers.estimating import router as estimating_router
+from backend.routers.intelligence import router as intelligence_router
 from backend.routers.opportunities import router as opportunities_router
 
 # Import all models so SQLAlchemy metadata is populated before create_all
 import backend.models  # noqa: F401
+import backend.models.intelligence  # noqa: F401
 
 logger = logging.getLogger("contractghost")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -93,6 +95,7 @@ app.include_router(signals_router, prefix="/api/v1")
 app.include_router(opportunities_router, prefix="/api/v1")
 app.include_router(bids_router, prefix="/api/v1")
 app.include_router(estimating_router, prefix="/api/v1")
+app.include_router(intelligence_router)
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────
