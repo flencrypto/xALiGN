@@ -340,11 +340,14 @@ async def extract_news_signals(company_name: str, news_text: str) -> list[dict[s
         signals = []
     except Exception as exc:
         logger.error("Grok news extraction failed: %s", exc)
-        raise
+        return []
 
     for signal in signals:
         confidence = assess_output_confidence(signal, task_type)
+        review_required, review_reasons = needs_human_review(signal, confidence, task_type)
         signal["confidence_score"] = confidence
+        signal["needs_human_review"] = review_required
+        signal["review_reasons"] = review_reasons
 
     aggregate_confidence = (
         sum(s.get("confidence_score", 0) for s in signals) / len(signals)
@@ -485,6 +488,9 @@ async def verify_claims(output_text: str, source_context: str) -> dict[str, Any]
     except json.JSONDecodeError:
         logger.warning("Grok returned non-JSON for claim verification")
         result = {"unsupported_claims": [], "verification_passed": True}
+    except Exception as exc:
+        logger.error("Grok claim verification failed: %s", exc)
+        raise
 
     record = create_invocation_record(
         prompt_hash=prompt_hash,

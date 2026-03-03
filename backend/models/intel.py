@@ -46,6 +46,9 @@ class CompanyIntel(Base):
     competitor_mentions: Mapped[str | None] = mapped_column(Text)
     strategic_risks: Mapped[str | None] = mapped_column(Text)
     bid_opportunities: Mapped[str | None] = mapped_column(Text)
+    evidence_source: Mapped[str | None] = mapped_column(Text, nullable=True)
+    quote_excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence_score: Mapped[float | None] = mapped_column(nullable=True)
     raw_response: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
@@ -80,6 +83,8 @@ class ExecutiveProfile(Base):
     charity_involvement: Mapped[str | None] = mapped_column(Text)
     communication_style: Mapped[str | None] = mapped_column(String(255))
     conversation_angles: Mapped[str | None] = mapped_column(Text)
+    evidence_source: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence_score: Mapped[float | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )
@@ -106,6 +111,8 @@ class NewsItem(Base):
     )
     company_name: Mapped[str | None] = mapped_column(String(255))
     published_at: Mapped[str | None] = mapped_column(String(100))
+    quote_excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence_score: Mapped[float | None] = mapped_column(nullable=True)
     detected_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )

@@ -87,16 +87,16 @@ def flush_invocation_log(db: Session = Depends(get_db)) -> dict[str, int]:
     count = 0
     for rec in records:
         db_record = AIInvocationLog(
-            prompt_hash=rec["prompt_hash"],
-            model_version=rec["model_version"],
-            task_type=rec["task_type"],
-            temperature=rec["temperature"],
-            top_p=rec["top_p"],
-            input_tokens=rec["input_tokens"],
-            output_tokens=rec["output_tokens"],
-            confidence_score=rec["confidence_score"],
-            validation_outcome=rec["validation_outcome"],
-            needs_review=rec["needs_review"],
+            prompt_hash=rec.get("prompt_hash", ""),
+            model_version=rec.get("model_version", "unknown"),
+            task_type=rec.get("task_type", "unknown"),
+            temperature=rec.get("temperature", 0.0),
+            top_p=rec.get("top_p", 0.9),
+            input_tokens=rec.get("input_tokens", 0),
+            output_tokens=rec.get("output_tokens", 0),
+            confidence_score=rec.get("confidence_score", 0.0),
+            validation_outcome=rec.get("validation_outcome", "pass"),
+            needs_review=rec.get("needs_review", False),
             review_reasons=json.dumps(rec.get("review_reasons", [])),
             anomalies=json.dumps(rec.get("anomalies", [])),
         )
