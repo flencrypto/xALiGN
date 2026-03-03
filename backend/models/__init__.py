@@ -5,6 +5,7 @@ from backend.models.bid import Bid, BidDocument, ComplianceItem, RFI
 from backend.models.estimating import ChecklistItem, EstimatingProject, ScopeGapItem
 from backend.models.intel import BlogPost, CompanyIntel, ExecutiveProfile, NewsItem, UploadedPhoto
 from backend.models.opportunity import Opportunity, QualificationScore
+from backend.models.tender import CallIntelligence, TenderAward
 
 __all__ = [
     "Account",
@@ -24,4 +25,6 @@ __all__ = [
     "NewsItem",
     "BlogPost",
     "UploadedPhoto",
+    "TenderAward",
+    "CallIntelligence",
 ]
