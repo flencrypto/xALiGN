@@ -21,13 +21,13 @@ def calculate_average_contract_value(values: list[float]) -> float:
 
 
 def calculate_competitive_pricing_index(price: float, market_avg: float) -> float:
-    """Return CPI = (price - market_avg) / market_avg.
+    """Return CPI = price / market_avg.
 
-    Negative means aggressive (below market), positive means premium.
+    1.0 means at market price, <1 means below market (aggressive), >1 means above market (premium).
     """
     if market_avg <= 0:
         raise ValueError("market_avg must be greater than zero")
-    return (price - market_avg) / market_avg
+    return price / market_avg
 
 
 def calculate_percentile_position(value: float, benchmark_values: list[float]) -> float:

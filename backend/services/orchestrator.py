@@ -17,7 +17,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from backend.services.ai_workers import (
+from services.ai_workers import (
     CallIntelWorker,
     CompanyResearchWorker,
     EarningsCallWorker,
@@ -101,7 +101,10 @@ class Orchestrator:
         for key in confidence_keys:
             val = result.get(key)
             if val is not None:
-                confidence = float(val)
+                try:
+                    confidence = float(val)
+                except (TypeError, ValueError):
+                    continue
                 break
         needs_review = bool(result.get("needs_human_review", False))
 
@@ -112,6 +115,59 @@ class Orchestrator:
             confidence=confidence,
             needs_review=needs_review,
             result=result,
+        )
+
+    def build_execution_plan(
+        self,
+        event_type: str,
+        context: dict[str, Any],
+        event_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Synchronous wrapper for building an execution plan (without calling workers).
+        
+        This is a lightweight sync method that returns a plan structure without
+        actually invoking async workers. Useful for testing and validation.
+        """
+        if event_type not in _SUPPORTED_EVENTS:
+            return self._plan(
+                event_type=event_type,
+                worker="none",
+                status="rejected",
+                confidence=0.0,
+                needs_review=False,
+                error=f"Unsupported event_type '{event_type}'",
+            )
+
+        # Duplicate suppression
+        if event_id is not None:
+            seen = _processed.setdefault(event_type, set())
+            if event_id in seen:
+                logger.info("Orchestrator: duplicate event_id=%s type=%s – skipped", event_id, event_type)
+                return self._plan(
+                    event_type=event_type,
+                    worker="none",
+                    status="duplicate_skipped",
+                    confidence=0.0,
+                    needs_review=False,
+                )
+            seen.add(event_id)
+
+        # Return a minimal plan without executing the worker
+        worker_map = {
+            "new_company": "company_deep_research",
+            "new_tender": "tender_award_analysis",
+            "new_earnings": "earnings_call_extraction",
+            "new_call": "call_intelligence",
+            "new_signal": "trend_detection",
+            "new_image": "image_intelligence",
+        }
+        
+        return self._plan(
+            event_type=event_type,
+            worker=worker_map.get(event_type, "none"),
+            status="plan_built",
+            confidence=0.0,
+            needs_review=False,
         )
 
     async def _route(self, event_type: str, context: dict[str, Any]) -> tuple[str, dict[str, Any]]:

@@ -49,6 +49,10 @@ def composite_confidence(
     return round(min(max(score, 0.0), 1.0), 4)
 
 
+# Alias for backward compatibility
+compute_composite_confidence = composite_confidence
+
+
 # ── Hallucination / anomaly detection ────────────────────────────────────────
 
 def check_numeric_anomalies(result: dict[str, Any]) -> list[str]:
@@ -77,6 +81,10 @@ def check_numeric_anomalies(result: dict[str, Any]) -> list[str]:
     return flags
 
 
+# Alias for backward compatibility
+check_numeric_sanity = check_numeric_anomalies
+
+
 # ── Human review gateway ──────────────────────────────────────────────────────
 
 def needs_human_review(confidence: float, anomaly_flags: list[str] | None = None) -> bool:
@@ -98,6 +106,10 @@ def validate_citations(claimed_values: list[str], source_text: str) -> dict[str,
     return results
 
 
+# Alias for backward compatibility
+validate_citation = validate_citations
+
+
 # ── Governance logger ─────────────────────────────────────────────────────────
 
 class GovernanceLogger:
@@ -108,11 +120,12 @@ class GovernanceLogger:
         worker_name: str,
         model: str,
         temperature: float,
-        system_prompt: str,
         input_tokens: int,
         output_tokens: int,
         confidence: float,
         validation_outcome: str,
+        system_prompt: str = "",
+        prompt_hash: str | None = None,
         extra: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Record an invocation and return the log entry dict."""
@@ -121,7 +134,7 @@ class GovernanceLogger:
             "worker_name": worker_name,
             "model": model,
             "temperature": temperature,
-            "prompt_version_hash": prompt_version_hash(system_prompt),
+            "prompt_version_hash": prompt_hash or prompt_version_hash(system_prompt),
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "confidence": confidence,
@@ -147,3 +160,8 @@ class GovernanceLogger:
         """Return the last *n* log entries (most-recent first)."""
         entries = list(_LOG_BUFFER)
         return list(reversed(entries))[:n]
+
+    @staticmethod
+    def get_recent(n: int = 100) -> list[dict[str, Any]]:
+        """Alias for recent() for backward compatibility."""
+        return GovernanceLogger.recent(n)
