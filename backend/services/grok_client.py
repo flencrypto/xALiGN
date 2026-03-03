@@ -222,3 +222,35 @@ async def write_blog_post(
     except Exception as exc:
         logger.error("Grok blog writing failed: %s", exc)
         raise
+
+
+async def analyze_call_transcript(transcript: str) -> dict[str, Any]:
+    """Use Grok to extract structured intelligence from a call transcript.
+
+    Returns: sentiment_score, competitor_mentions, budget_signals,
+             risk_phrases, next_steps, crm_summary.
+    """
+    system_prompt = (
+        "You are a sales intelligence analyst. "
+        "Analyse the provided call transcript and extract structured signals. "
+        "Return strictly valid JSON with these keys: "
+        "sentiment_score (float 0–10, 10=very positive), "
+        "competitor_mentions (array of strings), "
+        "budget_signals (array of strings), "
+        "risk_phrases (array of strings), "
+        "next_steps (string), "
+        "crm_summary (string, max 3 sentences). "
+        "No markdown, no code fences, only JSON."
+    )
+    user_content = f"Call transcript:\n{transcript[:8000]}"
+    raw = ""
+    try:
+        raw = await _chat(system_prompt, user_content, max_tokens=1024)
+        clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        logger.warning("Grok returned non-JSON for call analysis; returning raw")
+        return {"crm_summary": raw, "sentiment_score": None}
+    except Exception as exc:
+        logger.error("Grok call analysis failed: %s", exc)
+        raise

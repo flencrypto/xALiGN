@@ -3,7 +3,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
@@ -59,6 +59,15 @@ class CompanyIntel(Base):
     )
     blog_posts: Mapped[list["BlogPost"]] = relationship(
         "BlogPost", back_populates="company_intel", cascade="all, delete-orphan"
+    )
+    tender_awards: Mapped[list["TenderAward"]] = relationship(
+        "TenderAward", back_populates="company_intel", cascade="all, delete-orphan"
+    )
+    signal_events: Mapped[list["SignalEvent"]] = relationship(
+        "SignalEvent", back_populates="company_intel", cascade="all, delete-orphan"
+    )
+    calls: Mapped[list["CallIntelligence"]] = relationship(
+        "CallIntelligence", back_populates="company_intel", cascade="all, delete-orphan"
     )
 
 
@@ -146,6 +155,97 @@ class BlogPost(Base):
 
     company_intel: Mapped["CompanyIntel | None"] = relationship(
         "CompanyIntel", back_populates="blog_posts"
+    )
+
+
+# ── Tender Award ──────────────────────────────────────────────────────────────
+
+class TenderAward(Base):
+    """A public procurement contract award from tendering authority records."""
+
+    __tablename__ = "tender_awards"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    company_intel_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("company_intel.id", ondelete="SET NULL"), nullable=True
+    )
+    authority_name: Mapped[str] = mapped_column(String(500), nullable=False)
+    winning_company: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    contract_value: Mapped[float | None] = mapped_column(Float)
+    currency: Mapped[str] = mapped_column(String(3), default="GBP", server_default="GBP")
+    cpv_codes: Mapped[str | None] = mapped_column(Text)  # JSON array string
+    duration_months: Mapped[int | None] = mapped_column(Integer)
+    award_date: Mapped[datetime | None] = mapped_column(DateTime)
+    scope_summary: Mapped[str | None] = mapped_column(Text)
+    source_url: Mapped[str | None] = mapped_column(String(2048))
+    capacity_mw: Mapped[float | None] = mapped_column(Float)  # for CPI calculation
+    price_per_mw: Mapped[float | None] = mapped_column(Float)  # derived CPI field
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), server_default=func.now()
+    )
+
+    company_intel: Mapped["CompanyIntel | None"] = relationship(
+        "CompanyIntel", back_populates="tender_awards"
+    )
+
+
+# ── Signal Event ──────────────────────────────────────────────────────────────
+
+class SignalEvent(Base):
+    """A tracked market signal with exponential-decay scoring for relationship timing."""
+
+    __tablename__ = "signal_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    company_intel_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("company_intel.id", ondelete="CASCADE"), nullable=True
+    )
+    company_name: Mapped[str | None] = mapped_column(String(255))
+    signal_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    strength: Mapped[float] = mapped_column(Float, default=1.0, server_default="1.0")
+    decay_factor: Mapped[float] = mapped_column(Float, default=0.1, server_default="0.1")
+    event_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    source_url: Mapped[str | None] = mapped_column(String(2048))
+    description: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), server_default=func.now()
+    )
+
+    company_intel: Mapped["CompanyIntel | None"] = relationship(
+        "CompanyIntel", back_populates="signal_events"
+    )
+
+
+# ── Call Intelligence ─────────────────────────────────────────────────────────
+
+class CallIntelligence(Base):
+    """Analysed sales call or meeting — transcript + AI-extracted signals."""
+
+    __tablename__ = "call_intelligence"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    company_intel_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("company_intel.id", ondelete="SET NULL"), nullable=True
+    )
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    audio_filename: Mapped[str | None] = mapped_column(String(500))
+    audio_path: Mapped[str | None] = mapped_column(String(2048))
+    transcript: Mapped[str | None] = mapped_column(Text)
+    sentiment_score: Mapped[float | None] = mapped_column(Float)
+    competitor_mentions: Mapped[str | None] = mapped_column(Text)  # JSON array
+    budget_signals: Mapped[str | None] = mapped_column(Text)  # JSON array
+    risk_phrases: Mapped[str | None] = mapped_column(Text)  # JSON array
+    next_steps: Mapped[str | None] = mapped_column(Text)
+    crm_summary: Mapped[str | None] = mapped_column(Text)
+    executive_profile_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("executive_profiles.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), server_default=func.now()
+    )
+
+    company_intel: Mapped["CompanyIntel | None"] = relationship(
+        "CompanyIntel", back_populates="calls"
     )
 
 

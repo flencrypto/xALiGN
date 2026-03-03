@@ -1,0 +1,30 @@
+# ContractGHOST Kubernetes Ingress
+# Routes external HTTPS traffic to the API service.
+# Uses nginx ingress controller with cert-manager TLS.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: contractghost-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "110m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.contractghost.io
+      secretName: contractghost-tls
+  rules:
+    - host: api.contractghost.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: contractghost-api-service
+                port:
+                  number: 80

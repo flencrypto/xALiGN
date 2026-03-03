@@ -1,0 +1,288 @@
+// ContractGHOST – Production Prisma Schema
+// Maps to the same logical entities as the SQLAlchemy backend models.
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Tenant & Auth ─────────────────────────────────────────────────────────────
+
+model Tenant {
+  id               String    @id @default(uuid())
+  name             String
+  subscriptionPlan String    @default("starter")
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+
+  users            User[]
+  companies        Company[]
+  blogPosts        BlogPost[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id        String    @id @default(uuid())
+  tenantId  String
+  email     String    @unique
+  role      Role
+  createdAt DateTime  @default(now())
+  lastLogin DateTime?
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CONTRIBUTOR
+  READ_ONLY
+}
+
+// ── Company Intelligence ──────────────────────────────────────────────────────
+
+model Company {
+  id              String    @id @default(uuid())
+  tenantId        String
+  name            String
+  website         String?
+  industry        String?
+  expansionScore  Float?
+  pricingIndex    Float?
+  riskScore       Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  executives      Executive[]
+  tenders         TenderAward[]
+  signals         SignalEvent[]
+  calls           CallIntelligence[]
+  documents       Document[]
+  newsItems       NewsItem[]
+}
+
+model Executive {
+  id             String    @id @default(uuid())
+  companyId      String
+  name           String
+  title          String
+  publicProfile  String?   @db.Text
+  styleProfile   String?   @db.Text
+  createdAt      DateTime  @default(now())
+
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  calls          CallIntelligence[]
+}
+
+// ── Tender Awards & Competitive Pricing ──────────────────────────────────────
+
+model TenderAward {
+  id             String    @id @default(uuid())
+  companyId      String?
+  authorityName  String
+  winningCompany String
+  contractValue  Float?
+  currency       String    @default("GBP")
+  cpvCodes       String[]  @default([])
+  // NOTE: The SQLAlchemy backend stores cpvCodes as a JSON-serialised Text field
+  // for SQLite compatibility. In a PostgreSQL-only deployment both can use
+  // native arrays — align the SQLAlchemy model to use ARRAY(String) if desired.
+  durationMonths Int?
+  awardDate      DateTime?
+  scopeSummary   String?   @db.Text
+  sourceUrl      String?
+  capacityMw     Float?
+  pricePerMw     Float?    // auto-computed: contractValue / capacityMw
+  createdAt      DateTime  @default(now())
+
+  company        Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+}
+
+// ── Signal Events (Relationship Timing Engine) ────────────────────────────────
+
+model SignalEvent {
+  id            String    @id @default(uuid())
+  companyId     String?
+  companyName   String?
+  signalType    String    // expansion | funding | hiring | contract_win | conference | earnings | partnership | risk
+  strength      Float     @default(1.0)  // signal importance weight
+  decayFactor   Float     @default(0.1)  // λ in Weight = strength × e^(−λ × days)
+  eventDate     DateTime
+  sourceUrl     String?
+  description   String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+// ── Call Intelligence ─────────────────────────────────────────────────────────
+
+model CallIntelligence {
+  id                 String    @id @default(uuid())
+  companyId          String?
+  executiveId        String?
+  title              String
+  audioFilename      String?
+  audioPath          String?
+  transcript         String?   @db.Text
+  sentimentScore     Float?    // 0–10
+  competitorMentions String[]  @default([])
+  // NOTE: SQLAlchemy backend stores array fields as JSON-serialised Text for
+  // SQLite/PostgreSQL portability. In a PostgreSQL-only deployment these can
+  // use native ARRAY(String) — align both schemas when migrating to Postgres-only.
+  budgetSignals      String[]  @default([])
+  riskPhrases        String[]  @default([])
+  nextSteps          String?   @db.Text
+  crmSummary         String?   @db.Text
+  createdAt          DateTime  @default(now())
+
+  company            Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  executive          Executive? @relation(fields: [executiveId], references: [id], onDelete: SetNull)
+}
+
+// ── News Items ────────────────────────────────────────────────────────────────
+
+model NewsItem {
+  id          String    @id @default(uuid())
+  companyId   String?
+  title       String
+  summary     String?   @db.Text
+  sourceUrl   String?
+  category    String    @default("general") // expansion | earnings | technology | competitor | hiring | funding | general
+  companyName String?
+  publishedAt String?
+  detectedAt  DateTime  @default(now())
+
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+// ── Documents ─────────────────────────────────────────────────────────────────
+
+model Document {
+  id          String    @id @default(uuid())
+  companyId   String?
+  filename    String
+  storagePath String
+  contentType String?
+  sizeBytes   Int?
+  altText     String?
+  aiDesc      String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+}
+
+// ── Blog Posts ────────────────────────────────────────────────────────────────
+
+model BlogPost {
+  id              String    @id @default(uuid())
+  tenantId        String
+  companyId       String?
+  title           String
+  slug            String    @unique
+  bodyMarkdown    String    @db.Text
+  metaDescription String?
+  seoKeywords     String?
+  linkedinVariant String?   @db.Text
+  xVariant        String?   @db.Text
+  status          BlogStatus @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+enum BlogStatus {
+  DRAFT
+  APPROVED
+  PUBLISHED
+}
+
+// ── Bid Lifecycle ─────────────────────────────────────────────────────────────
+
+model Bid {
+  id             String    @id @default(uuid())
+  tenantId       String
+  opportunityId  String?
+  title          String
+  tenderRef      String?
+  submissionDate DateTime?
+  status         BidStatus @default(DRAFT)
+  winThemes      String?   @db.Text
+  notes          String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  documents      BidDocument[]
+  complianceItems ComplianceItem[]
+  rfis           RFI[]
+}
+
+enum BidStatus {
+  DRAFT
+  REVIEW
+  SUBMITTED
+  WON
+  LOST
+}
+
+model BidDocument {
+  id                    String    @id @default(uuid())
+  bidId                 String
+  filename              String
+  docType               String
+  contentText           String?   @db.Text
+  extractedRequirements String?   @db.Text
+  uploadedAt            DateTime  @default(now())
+
+  bid                   Bid       @relation(fields: [bidId], references: [id], onDelete: Cascade)
+}
+
+model ComplianceItem {
+  id               String    @id @default(uuid())
+  bidId            String
+  requirement      String    @db.Text
+  category         String?
+  complianceStatus String    @default("tbc")
+  evidence         String?   @db.Text
+  owner            String?
+  notes            String?   @db.Text
+
+  bid              Bid       @relation(fields: [bidId], references: [id], onDelete: Cascade)
+}
+
+model RFI {
+  id          String    @id @default(uuid())
+  bidId       String
+  question    String    @db.Text
+  category    String?
+  priority    String    @default("medium")
+  status      String    @default("draft")
+  answer      String?   @db.Text
+  submittedAt DateTime?
+  answeredAt  DateTime?
+
+  bid         Bid       @relation(fields: [bidId], references: [id], onDelete: Cascade)
+}
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String    @id @default(uuid())
+  tenantId   String
+  userId     String?
+  entityType String
+  entityId   String
+  action     String
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}

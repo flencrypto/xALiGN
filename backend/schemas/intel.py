@@ -151,3 +151,129 @@ class UploadedPhotoRead(BaseModel):
     company_intel_id: int | None = None
     bid_id: int | None = None
     uploaded_at: datetime
+
+
+# ── Tender Award ──────────────────────────────────────────────────────────────
+
+class TenderAwardCreate(BaseModel):
+    authority_name: str = Field(..., max_length=500)
+    winning_company: str = Field(..., max_length=500)
+    contract_value: float | None = None
+    currency: str = Field("GBP", max_length=3)
+    cpv_codes: str | None = None
+    duration_months: int | None = None
+    award_date: datetime | None = None
+    scope_summary: str | None = None
+    source_url: str | None = Field(None, max_length=2048)
+    capacity_mw: float | None = None
+    company_intel_id: int | None = None
+
+
+class TenderAwardRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    company_intel_id: int | None = None
+    authority_name: str
+    winning_company: str
+    contract_value: float | None = None
+    currency: str
+    cpv_codes: str | None = None
+    duration_months: int | None = None
+    award_date: datetime | None = None
+    scope_summary: str | None = None
+    source_url: str | None = None
+    capacity_mw: float | None = None
+    price_per_mw: float | None = None
+    created_at: datetime
+
+
+class TenderAwardUpdate(BaseModel):
+    authority_name: str | None = Field(None, max_length=500)
+    winning_company: str | None = Field(None, max_length=500)
+    contract_value: float | None = None
+    currency: str | None = Field(None, max_length=3)
+    cpv_codes: str | None = None
+    duration_months: int | None = None
+    award_date: datetime | None = None
+    scope_summary: str | None = None
+    source_url: str | None = Field(None, max_length=2048)
+    capacity_mw: float | None = None
+
+
+# ── Signal Event ──────────────────────────────────────────────────────────────
+
+class SignalEventCreate(BaseModel):
+    company_intel_id: int | None = None
+    company_name: str | None = Field(None, max_length=255)
+    signal_type: str = Field(..., max_length=100)
+    strength: float = Field(1.0, ge=0.0, le=10.0)
+    decay_factor: float = Field(0.1, ge=0.0, le=1.0)
+    event_date: datetime
+    source_url: str | None = Field(None, max_length=2048)
+    description: str | None = None
+
+
+class SignalEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    company_intel_id: int | None = None
+    company_name: str | None = None
+    signal_type: str
+    strength: float
+    decay_factor: float
+    event_date: datetime
+    source_url: str | None = None
+    description: str | None = None
+    created_at: datetime
+
+
+class SignalEventUpdate(BaseModel):
+    signal_type: str | None = Field(None, max_length=100)
+    strength: float | None = Field(None, ge=0.0, le=10.0)
+    decay_factor: float | None = Field(None, ge=0.0, le=1.0)
+    event_date: datetime | None = None
+    source_url: str | None = Field(None, max_length=2048)
+    description: str | None = None
+
+
+class RelationshipTimingResponse(BaseModel):
+    company_name: str | None
+    total_score: float
+    recommendation: str
+    context_brief: str
+    conversation_angle: str
+    risk_flags: list[str]
+    top_signals: list[SignalEventRead]
+
+
+# ── Call Intelligence ─────────────────────────────────────────────────────────
+
+class CallCreate(BaseModel):
+    title: str = Field(..., max_length=500)
+    company_intel_id: int | None = None
+    executive_profile_id: int | None = None
+    transcript: str | None = None
+
+
+class CallRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    company_intel_id: int | None = None
+    executive_profile_id: int | None = None
+    title: str
+    audio_filename: str | None = None
+    transcript: str | None = None
+    sentiment_score: float | None = None
+    competitor_mentions: str | None = None
+    budget_signals: str | None = None
+    risk_phrases: str | None = None
+    next_steps: str | None = None
+    crm_summary: str | None = None
+    created_at: datetime
+
+
+class CallAnalyzeRequest(BaseModel):
+    transcript: str = Field(..., min_length=20)

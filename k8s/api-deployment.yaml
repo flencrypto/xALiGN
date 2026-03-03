@@ -1,0 +1,65 @@
+# ContractGHOST Kubernetes Deployment
+# API Service — 3 replicas, reads DATABASE_URL and XAI_API_KEY from secrets
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contractghost-api
+  labels:
+    app: contractghost-api
+    component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: contractghost-api
+  template:
+    metadata:
+      labels:
+        app: contractghost-api
+    spec:
+      containers:
+        - name: contractghost-api
+          image: contractghost/api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: DATABASE_URL
+            - name: XAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: XAI_API_KEY
+            - name: UPLOAD_DIR
+              value: /data/uploads
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /data/uploads
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: uploads-storage
+          persistentVolumeClaim:
+            claimName: uploads-pvc

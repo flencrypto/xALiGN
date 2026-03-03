@@ -1,0 +1,48 @@
+# ContractGHOST Kubernetes Deployment
+# Intelligence Worker — 2 replicas for background research/scoring/blog tasks
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contractghost-worker
+  labels:
+    app: contractghost-worker
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: contractghost-worker
+  template:
+    metadata:
+      labels:
+        app: contractghost-worker
+    spec:
+      containers:
+        - name: contractghost-worker
+          image: contractghost/worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: db-secrets
+            - secretRef:
+                name: api-secrets
+          env:
+            - name: WORKER_CONCURRENCY
+              value: "4"
+            - name: UPLOAD_DIR
+              value: /data/uploads
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /data/uploads
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+      volumes:
+        - name: uploads-storage
+          persistentVolumeClaim:
+            claimName: uploads-pvc
