@@ -354,3 +354,108 @@ export const uploadsApi = {
   fileUrl: (id: number) => `${BASE_URL}/uploads/photos/${id}/file`,
   delete: (id: number) => request<void>(`/uploads/photos/${id}`, { method: 'DELETE' }),
 };
+
+// ── Tender Intelligence Types ──────────────────────────────────────────────
+
+export interface TenderAward {
+  id: number;
+  authority_name: string;
+  winning_company: string;
+  contract_value?: number;
+  contract_currency?: string;
+  scope_summary?: string;
+  cpv_codes?: string[];
+  award_date?: string;
+  duration_months?: number;
+  source_url?: string;
+  framework: boolean;
+  region?: string;
+  competitors?: string[];
+  mw_capacity?: number;
+  created_at?: string;
+}
+
+export interface CPIResult {
+  company: string;
+  award_count: number;
+  total_value: number;
+  avg_price_per_mw?: number;
+  cpi?: number;
+  interpretation: string;
+}
+
+export interface WinScoreResult {
+  company: string;
+  win_probability: number;
+  cpi?: number;
+  breakdown: Record<string, number>;
+}
+
+export interface RelationshipSuggestResult {
+  company_name: string;
+  timing_score: number;
+  recommend_contact: boolean;
+  suggested_angle: string;
+  why_now: string;
+  what_to_mention: string;
+  what_to_avoid: string;
+  risk_flags: string;
+}
+
+// ── Call Intelligence Types ────────────────────────────────────────────────
+
+export interface CallIntelligence {
+  id: number;
+  company_name?: string;
+  executive_name?: string;
+  transcript?: string;
+  sentiment_score?: number;
+  competitor_mentions?: string[];
+  budget_signals?: string[];
+  timeline_mentions?: string[];
+  risk_language?: string[];
+  objection_categories?: string[];
+  next_steps?: string;
+  created_at?: string;
+}
+
+// ── Tender API ─────────────────────────────────────────────────────────────
+
+export const tenderApi = {
+  list: (company?: string) =>
+    request<TenderAward[]>(`/tenders${company ? `?company=${encodeURIComponent(company)}` : ''}`),
+  create: (data: Partial<TenderAward>) =>
+    request<TenderAward>('/tenders', { method: 'POST', body: JSON.stringify(data) }),
+  get: (id: number) => request<TenderAward>(`/tenders/${id}`),
+  delete: (id: number) => request<void>(`/tenders/${id}`, { method: 'DELETE' }),
+  getCPI: (company: string, regionFactor?: number) =>
+    request<CPIResult>(`/tenders/score/cpi?company=${encodeURIComponent(company)}${regionFactor ? `&region_factor=${regionFactor}` : ''}`),
+  getWinScore: (data: {
+    company: string;
+    historical_win_rate: number;
+    expansion_activity_score: number;
+    hiring_velocity: number;
+    risk_score: number;
+    region_factor?: number;
+  }) => request<WinScoreResult>('/tenders/score/win', { method: 'POST', body: JSON.stringify(data) }),
+  suggestRelationship: (data: {
+    company_name: string;
+    recent_events: string[];
+    days_since_events: number[];
+  }) =>
+    request<RelationshipSuggestResult>('/tenders/score/relationship', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
+// ── Calls API ──────────────────────────────────────────────────────────────
+
+export const callsApi = {
+  analyse: (data: { company_name?: string; executive_name?: string; transcript: string }) =>
+    request<CallIntelligence>('/calls/analyse', { method: 'POST', body: JSON.stringify(data) }),
+  list: (company_name?: string) =>
+    request<CallIntelligence[]>(`/calls${company_name ? `?company_name=${encodeURIComponent(company_name)}` : ''}`),
+  get: (id: number) => request<CallIntelligence>(`/calls/${id}`),
+  delete: (id: number) => request<void>(`/calls/${id}`, { method: 'DELETE' }),
+};

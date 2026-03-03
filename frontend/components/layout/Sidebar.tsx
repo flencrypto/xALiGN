@@ -11,6 +11,8 @@ const navItems = [
   { href: '/bids', label: 'Bids', icon: '📋' },
   { href: '/estimating', label: 'Estimating', icon: '📐' },
   { href: '/intel', label: 'Intelligence', icon: '🔍' },
+  { href: '/tenders', label: 'Tenders', icon: '📑' },
+  { href: '/calls', label: 'Calls', icon: '📞' },
   { href: '/blog', label: 'Blog', icon: '✍️' },
 ];
 
