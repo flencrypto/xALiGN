@@ -1,6 +1,24 @@
 version: "3.9"
 
 services:
+  # ── PostgreSQL (production database) ──────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-align}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-align_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-align}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-align}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -8,10 +26,28 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./align.db
-      - CORS_ORIGINS=http://localhost:3000
+      # Switch to PostgreSQL by setting DATABASE_URL here or in .env
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./align.db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      # Storage
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-local}
+      - UPLOAD_DIR=${UPLOAD_DIR:-./uploads}
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_REGION=${S3_REGION:-eu-west-2}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      # Auth
+      - AUTH_PROVIDER=${AUTH_PROVIDER:-none}
+      - CLERK_ISSUER=${CLERK_ISSUER:-}
+      - CLERK_JWKS_URL=${CLERK_JWKS_URL:-}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-}
     volumes:
-      - backend_data:/app/data
+      - backend_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -25,9 +61,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+      # Clerk (optional)
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
+      # Auth0 (optional)
+      - NEXT_PUBLIC_AUTH0_DOMAIN=${NEXT_PUBLIC_AUTH0_DOMAIN:-}
+      - NEXT_PUBLIC_AUTH0_CLIENT_ID=${NEXT_PUBLIC_AUTH0_CLIENT_ID:-}
     depends_on:
       - backend
 
 volumes:
+  postgres_data:
   backend_data:

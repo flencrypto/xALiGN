@@ -1,9 +1,10 @@
 """CRUD router for Bids, BidDocuments, ComplianceItems, and RFIs."""
 
 import json
+import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -12,6 +13,7 @@ from backend.models.bid import (
     BidDocument,
     ComplianceItem,
     ComplianceStatus,
+    DocType,
     RFI,
     RFIPriority,
     RFIStatus,
@@ -31,6 +33,10 @@ from backend.schemas.bid import (
     RFIRead,
     RFIUpdate,
 )
+from backend.services import document_parser
+from backend.services import grok_client
+
+logger = logging.getLogger("align.bids")
 
 router = APIRouter(prefix="/bids", tags=["Bids"])
 
@@ -354,3 +360,170 @@ def generate_rfis(bid_id: int, db: Session = Depends(get_db)):
     for rfi in created:
         db.refresh(rfi)
     return created
+
+
+# ── Document upload + parsing ─────────────────────────────────────────────────
+
+_PARSE_ALLOWED_TYPES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/msword",
+}
+_PARSE_MAX_BYTES = 20 * 1024 * 1024  # 20 MB
+
+
+@router.post(
+    "/{bid_id}/documents/upload-and-parse",
+    response_model=BidDocumentRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload a PDF or Word document and extract requirements",
+)
+async def upload_and_parse_document(
+    bid_id: int,
+    file: UploadFile = File(...),
+    doc_type: DocType = Form(DocType.tender),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload a PDF or Word (.docx) document, parse its text, and extract
+    compliance requirements using heuristic NLP.
+
+    The parsed ``content_text`` and ``extracted_requirements`` (JSON list) are
+    stored on the resulting BidDocument record and can be used to auto-generate
+    a compliance matrix.
+    """
+    if not db.get(Bid, bid_id):
+        raise HTTPException(status_code=404, detail="Bid not found")
+
+    if file.content_type and file.content_type not in _PARSE_ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported file type: {file.content_type}. Supported: PDF, Word (.docx)",
+        )
+
+    content = await file.read()
+    if len(content) > _PARSE_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds maximum of {_PARSE_MAX_BYTES // (1024*1024)} MB",
+        )
+
+    filename = file.filename or "upload.bin"
+    content_text, extracted_requirements_json = document_parser.parse_document(content, filename)
+
+    obj = BidDocument(
+        bid_id=bid_id,
+        filename=filename,
+        doc_type=doc_type,
+        content_text=content_text or None,
+        extracted_requirements=extracted_requirements_json if extracted_requirements_json != "[]" else None,
+    )
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    logger.info("Parsed document %s for bid %d – extracted %s bytes of text", filename, bid_id, len(content_text))
+    return obj
+
+
+@router.post(
+    "/{bid_id}/documents/{doc_id}/parse",
+    response_model=BidDocumentRead,
+    summary="Re-parse an existing document using LLM-enhanced extraction",
+)
+async def llm_parse_document(bid_id: int, doc_id: int, db: Session = Depends(get_db)):
+    """
+    Run LLM-enhanced requirement extraction on a previously uploaded document.
+
+    Requires XAI_API_KEY. Falls back to heuristic extraction if not configured.
+    Updates the document's ``extracted_requirements`` in-place.
+    """
+    doc = db.get(BidDocument, doc_id)
+    if not doc or doc.bid_id != bid_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if not doc.content_text:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Document has no parsed text. Upload via upload-and-parse first.",
+        )
+
+    if grok_client.is_configured():
+        try:
+            reqs = await grok_client.parse_document_requirements(
+                doc.content_text, doc.doc_type.value
+            )
+            doc.extracted_requirements = json.dumps(reqs)
+        except Exception as exc:
+            logger.warning("LLM parse failed, falling back to heuristic: %s", exc)
+            _, doc.extracted_requirements = document_parser.parse_document(
+                doc.content_text.encode(), doc.filename
+            )
+    else:
+        _, doc.extracted_requirements = document_parser.parse_document(
+            doc.content_text.encode(), doc.filename
+        )
+
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+# ── LLM Compliance Answer Generation ─────────────────────────────────────────
+
+from pydantic import BaseModel
+
+
+class ComplianceAnswerRequest(BaseModel):
+    company_context: str | None = None
+
+
+@router.post(
+    "/{bid_id}/compliance/{item_id}/generate-answer",
+    response_model=ComplianceItemRead,
+    summary="Use LLM to draft a compliance answer for a requirement",
+)
+async def generate_compliance_answer(
+    bid_id: int,
+    item_id: int,
+    payload: ComplianceAnswerRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Use Grok to draft a compliance answer for the specified compliance item.
+
+    The generated answer is stored in the ``evidence`` field and the suggested
+    ``compliance_status`` is applied if the current status is 'tbc'.
+
+    Requires XAI_API_KEY to be configured.
+    """
+    item = db.get(ComplianceItem, item_id)
+    if not item or item.bid_id != bid_id:
+        raise HTTPException(status_code=404, detail="Compliance item not found")
+
+    if not grok_client.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="XAI_API_KEY is not configured. LLM compliance answers are unavailable.",
+        )
+
+    try:
+        result = await grok_client.generate_compliance_answer(
+            requirement=item.requirement,
+            category=item.category,
+            company_context=payload.company_context,
+        )
+    except Exception as exc:
+        logger.error("LLM compliance answer generation failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"LLM request failed: {exc}")
+
+    item.evidence = result.get("answer", "")
+    caveats = result.get("caveats", "")
+    if caveats:
+        item.notes = (item.notes or "") + (f"\n[AI caveats] {caveats}").strip()
+
+    suggested_status = result.get("compliance_status", "")
+    if item.compliance_status == ComplianceStatus.tbc and suggested_status in ComplianceStatus.__members__:
+        item.compliance_status = ComplianceStatus(suggested_status)
+
+    db.commit()
+    db.refresh(item)
+    return item

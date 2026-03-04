@@ -18,7 +18,7 @@ from typing import Any
 
 import httpx
 
-from services.governance import GovernanceLogger, check_numeric_anomalies, needs_human_review
+from backend.services.governance import GovernanceLogger, check_numeric_anomalies, needs_human_review
 
 logger = logging.getLogger("align.ai_workers")
 
