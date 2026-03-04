@@ -46,8 +46,12 @@ class Account(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     type: Mapped[AccountType] = mapped_column(Enum(AccountType), nullable=False)
+    stage: Mapped[str | None] = mapped_column(String(100))
     tier_target: Mapped[str | None] = mapped_column(String(50))
     location: Mapped[str | None] = mapped_column(String(255))
+    website: Mapped[str | None] = mapped_column(String(2048))
+    logo_url: Mapped[str | None] = mapped_column(String(2048))
+    tags: Mapped[str | None] = mapped_column(String(500))
     annual_revenue: Mapped[float | None] = mapped_column()
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(

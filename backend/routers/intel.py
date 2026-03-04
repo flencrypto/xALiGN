@@ -103,6 +103,8 @@ async def research_company(payload: CompanyIntelRequest, db: Session = Depends(g
         competitor_mentions=_serialise(intel_data.get("competitor_mentions")),
         strategic_risks=_serialise(intel_data.get("strategic_risks")),
         bid_opportunities=_serialise(intel_data.get("bid_opportunities")),
+        stock_ticker=intel_data.get("stock_ticker") or None,
+        stock_price=intel_data.get("stock_price") or None,
         raw_response=intel_data.get("raw_response"),
     )
     db.add(obj)
@@ -130,6 +132,16 @@ async def research_company(payload: CompanyIntelRequest, db: Session = Depends(g
                 db.add(profile)
         except Exception as exc:
             logger.warning("Executive profiling failed (non-fatal): %s", exc)
+
+    # 4. Social media signals (LinkedIn & X posts)
+    try:
+        social_data = await grok_client.research_social_media(
+            company_name or payload.website, homepage_text
+        )
+        obj.linkedin_posts = _serialise(social_data.get("linkedin_posts")) or None
+        obj.x_posts = _serialise(social_data.get("x_posts")) or None
+    except Exception as exc:
+        logger.warning("Social media research failed (non-fatal): %s", exc)
 
     db.commit()
     db.refresh(obj)

@@ -12,8 +12,12 @@ from backend.models.account import AccountType, InfluenceLevel, SignalStatus, Si
 class AccountBase(BaseModel):
     name: str = Field(..., max_length=255)
     type: AccountType
+    stage: str | None = Field(None, max_length=100)
     tier_target: str | None = Field(None, max_length=50)
     location: str | None = Field(None, max_length=255)
+    website: str | None = Field(None, max_length=2048)
+    logo_url: str | None = Field(None, max_length=2048)
+    tags: str | None = Field(None, max_length=500)
     annual_revenue: float | None = None
     notes: str | None = None
 
@@ -25,8 +29,12 @@ class AccountCreate(AccountBase):
 class AccountUpdate(BaseModel):
     name: str | None = Field(None, max_length=255)
     type: AccountType | None = None
+    stage: str | None = Field(None, max_length=100)
     tier_target: str | None = Field(None, max_length=50)
     location: str | None = Field(None, max_length=255)
+    website: str | None = Field(None, max_length=2048)
+    logo_url: str | None = Field(None, max_length=2048)
+    tags: str | None = Field(None, max_length=500)
     annual_revenue: float | None = None
     notes: str | None = None
 

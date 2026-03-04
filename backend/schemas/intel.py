@@ -59,6 +59,10 @@ class CompanyIntelRead(BaseModel):
     competitor_mentions: str | None = None
     strategic_risks: str | None = None
     bid_opportunities: str | None = None
+    stock_ticker: str | None = None
+    stock_price: str | None = None
+    linkedin_posts: str | None = None
+    x_posts: str | None = None
     created_at: datetime
     executives: list[ExecutiveProfileRead] = []
     news_items: list[NewsItemRead] = []

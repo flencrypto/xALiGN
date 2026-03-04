@@ -70,8 +70,11 @@ async def research_company(website: str, crawl_text: str) -> dict[str, Any]:
         "Return strictly valid JSON with the following keys: "
         "company_name, business_model, locations, expansion_signals, "
         "technology_indicators, financial_summary, earnings_highlights, "
-        "competitor_mentions, strategic_risks, bid_opportunities. "
-        "Each value should be a short descriptive string or a JSON array of strings. "
+        "competitor_mentions, strategic_risks, bid_opportunities, "
+        "stock_ticker, stock_price. "
+        "stock_ticker: the stock exchange ticker symbol if publicly listed (e.g. 'NASDAQ:MSFT'), or null. "
+        "stock_price: latest known public stock price and date if available (e.g. '$415.23 as of Jan 2025'), or null. "
+        "Each other value should be a short descriptive string or a JSON array of strings. "
         "Do not include any markdown, code fences, or extra text outside the JSON object."
     )
     user_content = (
@@ -81,7 +84,7 @@ async def research_company(website: str, crawl_text: str) -> dict[str, Any]:
 
     raw = ""
     try:
-        raw = await _chat(system_prompt, user_content, max_tokens=1500)
+        raw = await _chat(system_prompt, user_content, max_tokens=1800)
         clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
         return json.loads(clean)
     except json.JSONDecodeError:
@@ -90,6 +93,92 @@ async def research_company(website: str, crawl_text: str) -> dict[str, Any]:
     except Exception as exc:
         logger.error("Grok company research failed: %s", exc)
         raise
+
+
+async def swoop_company(url: str, page_title: str, page_text: str) -> dict[str, Any]:
+    """
+    Use Grok to extract a full structured account record from crawled company content.
+
+    Returns a dict with keys:
+      company_name, type, location, tags,
+      key_personnel (list of {name, role, linkedin, x_handle}),
+      recent_news (list of str), stock_ticker,
+      triggers (list of str), intel_summary, suggested_touchpoint.
+
+    Only public, professionally available information is used.
+    """
+    system_prompt = (
+        "You are an expert sales intelligence analyst. "
+        "Extract a complete, structured company profile from the provided webpage content. "
+        "Only use publicly available information. "
+        "Return ONLY strictly valid JSON – no markdown, no code fences, no extra text – with these keys:\n"
+        "  company_name (string),\n"
+        "  type (one of: Operator, Hyperscale, Contractor, Colocation, Developer, Enterprise, Other),\n"
+        "  location (string – city/country or region),\n"
+        "  tags (list of short lowercase strings, e.g. [\"ai\", \"renewable\", \"2025-launch\"]),\n"
+        "  key_personnel (list of objects: {name, role, linkedin, x_handle} – use null for unknown fields),\n"
+        "  recent_news (list of up to 5 recent headline strings about the company),\n"
+        "  stock_ticker (string like 'NASDAQ:MSFT' if publicly listed, else null),\n"
+        "  triggers (list of up to 5 short trigger signal strings, e.g. funding rounds, hiring spikes, expansions),\n"
+        "  intel_summary (string – 2-3 sentence summary of why this company is a target),\n"
+        "  suggested_touchpoint (string – a short draft LinkedIn outreach message to the key decision-maker)."
+    )
+    user_content = (
+        f"Company URL: {url}\n"
+        f"Page title: {page_title}\n\n"
+        f"Page content:\n{page_text[:7000]}"
+    )
+
+    raw = ""
+    try:
+        raw = await _chat(system_prompt, user_content, max_tokens=2000)
+        clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        logger.warning("Grok returned non-JSON for website swoop; wrapping raw text")
+        return {"raw_response": raw, "company_name": page_title or "Unknown"}
+    except Exception as exc:
+        logger.error("Grok website swoop failed: %s", exc)
+        raise
+
+
+async def research_social_media(company_name: str, crawl_text: str) -> dict[str, Any]:
+    """
+    Use Grok to synthesise recent LinkedIn and X.com (Twitter) posts for a company.
+
+    Returns a dict with keys: linkedin_posts (list of str), x_posts (list of str).
+    Only public, publicly-known post summaries are produced.
+    """
+    system_prompt = (
+        "You are a social media intelligence analyst. "
+        "Based on the provided company content, synthesise what recent public LinkedIn and X.com (Twitter) posts "
+        "from this company are likely to contain, drawing only on publicly known information about the company. "
+        "ONLY use publicly available data — do NOT invent information. "
+        "Return strictly valid JSON with keys: "
+        "linkedin_posts (list of up to 5 strings — recent LinkedIn post summaries or topics), "
+        "x_posts (list of up to 5 strings — recent X.com tweet summaries or topics). "
+        "If insufficient public data is available for either platform, return an empty list for that key. "
+        "Do not include any markdown or extra text outside the JSON object."
+    )
+    user_content = (
+        f"Company: {company_name}\n\n"
+        f"Public content:\n{crawl_text[:4000]}"
+    )
+
+    try:
+        raw = await _chat(system_prompt, user_content, max_tokens=800)
+        clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        result = json.loads(clean)
+        return {
+            "linkedin_posts": result.get("linkedin_posts", []),
+            "x_posts": result.get("x_posts", []),
+        }
+    except json.JSONDecodeError:
+        logger.warning("Grok returned non-JSON for social media research")
+        return {"linkedin_posts": [], "x_posts": []}
+    except Exception as exc:
+        logger.error("Grok social media research failed: %s", exc)
+        return {"linkedin_posts": [], "x_posts": []}
 
 
 async def research_executives(company_name: str, exec_text: str) -> list[dict[str, Any]]:

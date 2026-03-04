@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Header from '@/components/layout/Header';
-import { accountsApi, Account, Contact, TriggerSignal } from '@/lib/api';
+import WebsiteSwoop from '@/components/WebsiteSwoop';
+import { accountsApi, accountsCsvApi, Account, Contact, TriggerSignal, CsvImportResult } from '@/lib/api';
 
 const ACCOUNT_TYPES = ['All', 'Client', 'Prospect', 'Partner', 'Contractor'];
 
@@ -21,8 +22,11 @@ function signalColor(type: string) {
 interface NewAccountForm {
   name: string;
   type: string;
+  stage: string;
   location: string;
   website: string;
+  logo_url: string;
+  tags: string;
   notes: string;
 }
 
@@ -50,9 +54,12 @@ export default function AccountsPage() {
   const [showNewContact, setShowNewContact] = useState(false);
   const [showNewSignal, setShowNewSignal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [newAccount, setNewAccount] = useState<NewAccountForm>({ name: '', type: 'Client', location: '', website: '', notes: '' });
+  const [newAccount, setNewAccount] = useState<NewAccountForm>({ name: '', type: 'Client', stage: 'Target', location: '', website: '', logo_url: '', tags: '', notes: '' });
   const [newContact, setNewContact] = useState<NewContactForm>({ name: '', role: '', email: '', phone: '' });
   const [newSignal, setNewSignal] = useState<NewSignalForm>({ signal_type: 'expansion', description: '', source: '' });
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     accountsApi.list().then(setAccounts).catch(console.error).finally(() => setLoading(false));
@@ -75,7 +82,7 @@ export default function AccountsPage() {
       const acc = await accountsApi.create(newAccount);
       setAccounts((prev) => [...prev, acc]);
       setShowNewAccount(false);
-      setNewAccount({ name: '', type: 'Client', location: '', website: '', notes: '' });
+      setNewAccount({ name: '', type: 'Client', stage: 'Target', location: '', website: '', logo_url: '', tags: '', notes: '' });
     } finally {
       setSaving(false);
     }
@@ -109,6 +116,30 @@ export default function AccountsPage() {
     }
   }
 
+  async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvImporting(true);
+    setCsvResult(null);
+    try {
+      const result = await accountsCsvApi.import(file);
+      setCsvResult(result);
+      // Refresh accounts list after import
+      const updated = await accountsApi.list().catch(() => accounts);
+      setAccounts(updated);
+    } catch (err: unknown) {
+      setCsvResult({
+        created: 0,
+        skipped: 0,
+        errors: [(err as Error)?.message ?? 'Import failed'],
+        message: 'Import failed.',
+      });
+    } finally {
+      setCsvImporting(false);
+      if (csvInputRef.current) csvInputRef.current.value = '';
+    }
+  }
+
   const filtered = filter === 'All' ? accounts : accounts.filter((a) => a.type === filter);
 
   return (
@@ -116,14 +147,67 @@ export default function AccountsPage() {
       <Header
         title="Account Intelligence"
         action={
-          <button
-            onClick={() => setShowNewAccount(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            + New Account
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            {/* CSV toolbar */}
+            <a
+              href={accountsCsvApi.templateUrl()}
+              download="accounts_import_template.csv"
+              className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-colors border border-slate-600"
+            >
+              ⬇ Template
+            </a>
+            <label className={`bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-colors border border-slate-600 cursor-pointer ${csvImporting ? 'opacity-60 cursor-not-allowed' : ''}`}>
+              {csvImporting ? '⏳ Importing…' : '⬆ Import CSV'}
+              <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleCsvImport}
+                disabled={csvImporting}
+              />
+            </label>
+            <a
+              href={accountsCsvApi.exportUrl()}
+              download="accounts_export.csv"
+              className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition-colors border border-slate-600"
+            >
+              ⬇ Export CSV
+            </a>
+            <button
+              onClick={() => setShowNewAccount(true)}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              + New Account
+            </button>
+          </div>
         }
       />
+
+      {/* CSV import result banner */}
+      {csvResult && (
+        <div className={`mx-6 mt-4 p-4 rounded-lg border text-sm ${csvResult.errors.length === 0 ? 'bg-green-500/10 border-green-500/30 text-green-300' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300'}`}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-medium">{csvResult.message}</span>
+            <button onClick={() => setCsvResult(null)} className="text-slate-400 hover:text-white ml-4">✕</button>
+          </div>
+          {csvResult.errors.length > 0 && (
+            <ul className="list-disc list-inside space-y-0.5 mt-2 text-xs text-yellow-400">
+              {csvResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Website Swoop */}
+      <div className="px-6 pt-4">
+        <WebsiteSwoop
+          onAccountCreated={() => {
+            accountsApi.list().then(setAccounts).catch(console.error);
+          }}
+        />
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
         {/* Main table */}
         <div className="flex-1 p-6 overflow-auto">
@@ -149,7 +233,7 @@ export default function AccountsPage() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-4xl mb-3">🏢</p>
-              <p className="text-slate-400">No accounts yet. Add your first account to get started.</p>
+              <p className="text-slate-400">No accounts yet. Add your first account or import from CSV.</p>
             </div>
           ) : (
             <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
@@ -159,6 +243,7 @@ export default function AccountsPage() {
                     <th className="text-left px-4 py-3 text-slate-400 font-medium">Name</th>
                     <th className="text-left px-4 py-3 text-slate-400 font-medium">Type</th>
                     <th className="text-left px-4 py-3 text-slate-400 font-medium hidden md:table-cell">Location</th>
+                    <th className="text-left px-4 py-3 text-slate-400 font-medium hidden lg:table-cell">Website</th>
                     <th className="text-left px-4 py-3 text-slate-400 font-medium hidden lg:table-cell">Stage</th>
                   </tr>
                 </thead>
@@ -171,11 +256,24 @@ export default function AccountsPage() {
                         selected?.id === acc.id ? 'bg-slate-700/70' : ''
                       }`}
                     >
-                      <td className="px-4 py-3 text-white font-medium">{acc.name}</td>
+                      <td className="px-4 py-3 text-white font-medium flex items-center gap-2">
+                        {acc.logo_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={acc.logo_url} alt={`${acc.name} logo`} className="h-6 w-6 object-contain rounded" />
+                        )}
+                        {acc.name}
+                      </td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs border border-blue-500/30">{acc.type}</span>
                       </td>
                       <td className="px-4 py-3 text-slate-300 hidden md:table-cell">{acc.location ?? '—'}</td>
+                      <td className="px-4 py-3 text-slate-300 hidden lg:table-cell">
+                        {acc.website ? (
+                          <a href={acc.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs" onClick={(e) => e.stopPropagation()}>
+                            {acc.website.replace(/^https?:\/\//, '')}
+                          </a>
+                        ) : '—'}
+                      </td>
                       <td className="px-4 py-3 text-slate-300 hidden lg:table-cell">{acc.stage ?? '—'}</td>
                     </tr>
                   ))}
@@ -189,14 +287,44 @@ export default function AccountsPage() {
         {selected && (
           <div className="w-80 xl:w-96 border-l border-slate-700 bg-slate-800 overflow-auto p-5 flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-semibold text-lg truncate">{selected.name}</h2>
+              <div className="flex items-center gap-2">
+                {selected.logo_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={selected.logo_url} alt={`${selected.name} logo`} className="h-8 w-8 object-contain rounded" />
+                )}
+                <h2 className="text-white font-semibold text-lg truncate">{selected.name}</h2>
+              </div>
               <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-white ml-2">✕</button>
             </div>
             <div className="space-y-2 text-sm mb-5">
-              <p className="text-slate-400">Type: <span className="text-slate-200">{selected.type}</span></p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs border border-blue-500/30">{selected.type}</span>
+                {selected.stage && <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs border border-green-500/30">{selected.stage}</span>}
+                {selected.tier_target && <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">{selected.tier_target}</span>}
+              </div>
               <p className="text-slate-400">Location: <span className="text-slate-200">{selected.location ?? '—'}</span></p>
-              <p className="text-slate-400">Website: <span className="text-slate-200">{selected.website ?? '—'}</span></p>
-              {selected.notes && <p className="text-slate-400 text-xs">{selected.notes}</p>}
+              <p className="text-slate-400">Website:{' '}
+                {selected.website ? (
+                  <a href={selected.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                    {selected.website.replace(/^https?:\/\//, '')}
+                  </a>
+                ) : <span className="text-slate-200">—</span>}
+              </p>
+              {selected.annual_revenue != null && (
+                <p className="text-slate-400">Revenue: <span className="text-slate-200">${selected.annual_revenue.toLocaleString()}</span></p>
+              )}
+              {selected.tags && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {selected.tags.split(',').map((t) => t.trim()).filter(Boolean).map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 bg-slate-700 rounded text-xs text-slate-300">{tag}</span>
+                  ))}
+                </div>
+              )}
+              {selected.notes && (
+                <div className="bg-slate-700/40 rounded-lg p-3 mt-2">
+                  <p className="text-slate-300 text-xs whitespace-pre-wrap">{selected.notes}</p>
+                </div>
+              )}
             </div>
 
             {/* Contacts */}
@@ -252,12 +380,17 @@ export default function AccountsPage() {
             <h2 className="text-white font-semibold text-lg mb-4">New Account</h2>
             <form onSubmit={handleCreateAccount} className="space-y-3">
               <input required placeholder="Company name" value={newAccount.name} onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-              <select value={newAccount.type} onChange={(e) => setNewAccount({ ...newAccount, type: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                {['Client', 'Prospect', 'Partner', 'Contractor'].map((t) => <option key={t}>{t}</option>)}
-              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <select value={newAccount.type} onChange={(e) => setNewAccount({ ...newAccount, type: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                  {['Client', 'Prospect', 'Partner', 'Contractor'].map((t) => <option key={t}>{t}</option>)}
+                </select>
+                <input placeholder="Stage (e.g. Target)" value={newAccount.stage} onChange={(e) => setNewAccount({ ...newAccount, stage: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              </div>
               <input placeholder="Location" value={newAccount.location} onChange={(e) => setNewAccount({ ...newAccount, location: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-              <input placeholder="Website" value={newAccount.website} onChange={(e) => setNewAccount({ ...newAccount, website: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-              <textarea placeholder="Notes" value={newAccount.notes} onChange={(e) => setNewAccount({ ...newAccount, notes: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" />
+              <input placeholder="Website (https://...)" value={newAccount.website} onChange={(e) => setNewAccount({ ...newAccount, website: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              <input placeholder="Logo URL (https://...)" value={newAccount.logo_url} onChange={(e) => setNewAccount({ ...newAccount, logo_url: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              <input placeholder="Tags (comma-separated, e.g. ai, renewable)" value={newAccount.tags} onChange={(e) => setNewAccount({ ...newAccount, tags: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              <textarea placeholder="Notes / intel summary" value={newAccount.notes} onChange={(e) => setNewAccount({ ...newAccount, notes: e.target.value })} className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" />
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowNewAccount(false)} className="px-4 py-2 text-slate-300 hover:text-white text-sm">Cancel</button>
                 <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">{saving ? 'Saving…' : 'Create Account'}</button>

@@ -209,8 +209,61 @@ export default function IntelPage() {
                         <p className="text-white text-sm">{tryParseJson(value)}</p>
                       </div>
                     ))}
+                    {/* Stock price / ticker */}
+                    {(selected.stock_ticker || selected.stock_price) && (
+                      <div className="bg-slate-700/40 rounded-lg p-3">
+                        <p className="text-slate-400 text-xs mb-1">📊 Stock</p>
+                        <p className="text-white text-sm font-mono">
+                          {selected.stock_ticker && <span className="text-blue-400 mr-2">{selected.stock_ticker}</span>}
+                          {selected.stock_price || '—'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Social Media Posts */}
+                {(selected.linkedin_posts || selected.x_posts) && (
+                  <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+                    <h3 className="text-white font-semibold mb-4">📣 Recent Social Media</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selected.linkedin_posts && (() => {
+                        const posts: string[] = (() => {
+                          try { return JSON.parse(selected.linkedin_posts!) as string[]; } catch { return [selected.linkedin_posts!]; }
+                        })();
+                        return posts.length > 0 ? (
+                          <div>
+                            <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider mb-2">🔗 LinkedIn</p>
+                            <ul className="space-y-2">
+                              {posts.map((post, i) => (
+                                <li key={i} className="bg-slate-700/40 rounded-lg p-3 text-slate-300 text-sm">
+                                  {post}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null;
+                      })()}
+                      {selected.x_posts && (() => {
+                        const posts: string[] = (() => {
+                          try { return JSON.parse(selected.x_posts!) as string[]; } catch { return [selected.x_posts!]; }
+                        })();
+                        return posts.length > 0 ? (
+                          <div>
+                            <p className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">✕ X.com</p>
+                            <ul className="space-y-2">
+                              {posts.map((post, i) => (
+                                <li key={i} className="bg-slate-700/40 rounded-lg p-3 text-slate-300 text-sm">
+                                  {post}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
+                )}
 
                 {/* Executive Profiles */}
                 {selected.executives && selected.executives.length > 0 && (

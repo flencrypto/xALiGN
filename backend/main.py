@@ -13,10 +13,12 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import Base, engine
+from backend.migrations import run_migrations
 from backend.routers.accounts import contacts_router, router as accounts_router
 from backend.routers.accounts import signals_router
 from backend.routers.bids import router as bids_router
 from backend.routers.blog import router as blog_router
+from backend.routers.csv_import_export import router as csv_router
 from backend.routers.debriefs import router as debriefs_router
 from backend.routers.estimating import router as estimating_router
 from backend.routers.exports import router as exports_router
@@ -24,9 +26,11 @@ from backend.routers.frameworks import router as frameworks_router
 from backend.routers.intel import router as intel_router
 from backend.routers.leadtime import router as leadtime_router
 from backend.routers.opportunities import router as opportunities_router
+from backend.routers.swoop import router as swoop_router
 from backend.routers.tender import router as tender_router
 from backend.routers.uploads import router as uploads_router
 from backend.routers.calls import router as calls_router
+from backend.seed_data import run_seed
 
 # Import all models so SQLAlchemy metadata is populated before create_all
 import backend.models  # noqa: F401
@@ -37,10 +41,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create all database tables on startup."""
+    """Create all database tables, run schema migrations, and seed initial records on startup."""
     logger.info("aLiGN starting – creating database tables…")
     Base.metadata.create_all(bind=engine)
+    run_migrations()
     logger.info("Database ready.")
+    run_seed()
     yield
     logger.info("aLiGN shutting down.")
 
@@ -99,6 +105,8 @@ async def audit_log_middleware(request: Request, call_next) -> Response:
 app.include_router(accounts_router, prefix="/api/v1")
 app.include_router(contacts_router, prefix="/api/v1")
 app.include_router(signals_router, prefix="/api/v1")
+app.include_router(csv_router, prefix="/api/v1")
+app.include_router(swoop_router, prefix="/api/v1")
 app.include_router(opportunities_router, prefix="/api/v1")
 app.include_router(bids_router, prefix="/api/v1")
 app.include_router(exports_router, prefix="/api/v1")

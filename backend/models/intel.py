@@ -46,6 +46,10 @@ class CompanyIntel(Base):
     competitor_mentions: Mapped[str | None] = mapped_column(Text)
     strategic_risks: Mapped[str | None] = mapped_column(Text)
     bid_opportunities: Mapped[str | None] = mapped_column(Text)
+    stock_ticker: Mapped[str | None] = mapped_column(String(20))
+    stock_price: Mapped[str | None] = mapped_column(String(100))
+    linkedin_posts: Mapped[str | None] = mapped_column(Text)
+    x_posts: Mapped[str | None] = mapped_column(Text)
     raw_response: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
