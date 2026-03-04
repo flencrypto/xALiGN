@@ -81,6 +81,9 @@ class Bid(Base):
     estimating_projects: Mapped[list] = relationship(
         "EstimatingProject", back_populates="bid", cascade="all, delete-orphan"
     )
+    debrief: Mapped["BidDebrief | None"] = relationship(  # type: ignore[name-defined]
+        "BidDebrief", back_populates="bid", cascade="all, delete-orphan", uselist=False
+    )
 
 
 class BidDocument(Base):

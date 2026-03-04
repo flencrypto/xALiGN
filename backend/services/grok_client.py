@@ -163,6 +163,92 @@ async def extract_news_signals(company_name: str, news_text: str) -> list[dict[s
         raise
 
 
+async def generate_compliance_answer(
+    requirement: str,
+    category: str | None,
+    company_context: str | None,
+) -> dict[str, Any]:
+    """
+    Use Grok to draft a compliance answer for a tender requirement.
+
+    Returns a dict with keys: ``answer``, ``compliance_status``, ``confidence``,
+    ``evidence_suggestions``, ``caveats``.
+    """
+    system_prompt = (
+        "You are a bid writer specialising in data centre infrastructure contracts. "
+        "Given a tender requirement, draft a concise, professional compliance answer "
+        "that a contractor would submit. "
+        "Return strictly valid JSON with keys: "
+        "answer (string – the draft response text), "
+        "compliance_status (one of: yes, partial, no, tbc), "
+        "confidence (float 0.0–1.0), "
+        "evidence_suggestions (list of strings – documents or accreditations to reference), "
+        "caveats (string – any important qualifications or assumptions). "
+        "Do not include any markdown or text outside the JSON object."
+    )
+
+    ctx = f"Company context: {company_context}\n\n" if company_context else ""
+    cat_note = f"Requirement category: {category}\n" if category else ""
+    user_content = (
+        f"{ctx}{cat_note}"
+        f"Requirement:\n{requirement}"
+    )
+
+    raw = ""
+    try:
+        raw = await _chat(system_prompt, user_content, max_tokens=800)
+        clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        result = json.loads(clean)
+        return result
+    except json.JSONDecodeError:
+        logger.warning("Grok returned non-JSON for compliance answer; wrapping raw text")
+        return {
+            "answer": raw,
+            "compliance_status": "tbc",
+            "confidence": 0.5,
+            "evidence_suggestions": [],
+            "caveats": "LLM response could not be structured.",
+        }
+    except Exception as exc:
+        logger.error("Grok compliance answer generation failed: %s", exc)
+        raise
+
+
+async def parse_document_requirements(
+    document_text: str,
+    doc_type: str,
+) -> list[dict[str, Any]]:
+    """
+    Use Grok to extract structured compliance requirements from document text.
+
+    Returns a list of dicts with keys: ``requirement``, ``category``.
+    """
+    system_prompt = (
+        "You are a bid analyst parsing tender documents for data centre infrastructure. "
+        "Extract all compliance requirements from the document text provided. "
+        "Focus on 'shall', 'must', 'required', 'should' statements. "
+        f"Document type: {doc_type}. "
+        "Return strictly valid JSON: a list of objects with keys: "
+        "requirement (string – the full requirement text), "
+        "category (string – one of: technical, commercial, legal, quality, hse, programme, general). "
+        "Do not include any markdown or text outside the JSON array."
+    )
+    user_content = f"Document text:\n{document_text[:8000]}"
+
+    raw = ""
+    try:
+        raw = await _chat(system_prompt, user_content, max_tokens=2000)
+        clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        result = json.loads(clean)
+        return result if isinstance(result, list) else []
+    except json.JSONDecodeError:
+        logger.warning("Grok returned non-JSON for document requirements")
+        return []
+    except Exception as exc:
+        logger.error("Grok document parsing failed: %s", exc)
+        raise
+
+
 async def write_blog_post(
     topic: str,
     context: str,

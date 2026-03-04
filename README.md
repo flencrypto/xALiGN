@@ -83,8 +83,11 @@ aLiGN/
 |-------|------|
 | Frontend | Next.js 15, TypeScript, Tailwind CSS |
 | Backend | Python 3.11, FastAPI, SQLAlchemy 2, Pydantic v2 |
-| Database | SQLite (dev) / PostgreSQL (prod) |
-| Auth | Role-based (Clerk/Auth0 ready) |
+| Database | SQLite (dev) / PostgreSQL 16 (prod) |
+| File Storage | Local filesystem (dev) / Amazon S3 (prod) |
+| Auth | Clerk or Auth0 JWT verification (configurable via `AUTH_PROVIDER`) |
+| Document Parsing | pdfplumber (PDF), python-docx (Word) |
+| Exports | reportlab (PDF), python-docx (Word), openpyxl (Excel) |
 | Audit | HTTP middleware — all writes logged |
 | Docs | OpenAPI at `/docs` and `/redoc` |
 
@@ -111,10 +114,21 @@ GET             /api/v1/opportunities/{id}/qualification
 GET/POST        /api/v1/bids
 GET/PUT/DELETE  /api/v1/bids/{id}
 GET/POST        /api/v1/bids/{id}/documents
-GET/POST        /api/v1/bids/{id}/compliance-items
+POST            /api/v1/bids/{id}/documents/upload-and-parse   ← PDF/Word upload + extract
+POST            /api/v1/bids/{id}/documents/{doc_id}/parse     ← LLM re-parse
+GET/POST        /api/v1/bids/{id}/compliance
+POST            /api/v1/bids/{id}/compliance/{item_id}/generate-answer  ← LLM answer draft
 GET/POST        /api/v1/bids/{id}/rfis
 POST            /api/v1/bids/{id}/generate-compliance-matrix
 POST            /api/v1/bids/{id}/generate-rfis
+GET/POST/PATCH/DELETE /api/v1/bids/{id}/debrief               ← Bid debrief
+GET             /api/v1/bids/{id}/export/pursuit-pack-pdf      ← PDF export
+GET             /api/v1/bids/{id}/export/tender-response-docx  ← Word export
+GET             /api/v1/bids/{id}/export/compliance-matrix-xlsx ← Excel export
+
+# Debriefs (learning loop)
+GET             /api/v1/debriefs
+GET             /api/v1/debriefs/insights
 
 # Estimating
 GET/POST        /api/v1/estimating
@@ -122,17 +136,26 @@ GET/PUT/DELETE  /api/v1/estimating/{id}
 GET/POST        /api/v1/estimating/{id}/scope-gaps
 GET/POST        /api/v1/estimating/{id}/checklist
 GET             /api/v1/estimating/{id}/scope-gap-report
+
+# Lead-time intelligence
+GET/POST        /api/v1/lead-times
+GET/PATCH/DELETE /api/v1/lead-times/{id}
+POST            /api/v1/lead-times/seed                        ← Seed default dataset
+
+# Procurement frameworks
+GET/POST        /api/v1/frameworks
+GET/PATCH/DELETE /api/v1/frameworks/{id}
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Document parsing (PDF/Word → structured requirements via `unstructured` + `pdfplumber`)
-- [ ] LLM-assisted compliance answer generation
-- [ ] Lead-time intelligence database (switchgear, UPS, chillers, generators)
-- [ ] Bid debrief capture + learning loop
-- [ ] Framework & procurement tracker
-- [ ] Export: Pursuit Pack PDF, Tender Response Pack (Word), Compliance Matrix (Excel)
-- [ ] PostgreSQL + S3 production config
-- [ ] SSO / Auth (Clerk or Auth0)
+- [x] Document parsing (PDF/Word → structured requirements via `pdfplumber` + `python-docx`)
+- [x] LLM-assisted compliance answer generation
+- [x] Lead-time intelligence database (switchgear, UPS, chillers, generators)
+- [x] Bid debrief capture + learning loop
+- [x] Framework & procurement tracker
+- [x] Export: Pursuit Pack PDF, Tender Response Pack (Word), Compliance Matrix (Excel)
+- [x] PostgreSQL + S3 production config
+- [x] SSO / Auth (Clerk or Auth0)

@@ -17,7 +17,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from services.ai_workers import (
+from backend.services.ai_workers import (
     CallIntelWorker,
     CompanyResearchWorker,
     EarningsCallWorker,

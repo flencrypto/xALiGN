@@ -1,0 +1,42 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to create GitHub Release assets on tag pushes
+
+jobs:
+  build:
+    name: Compile Inno Setup installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Inno Setup 6
+        run: choco install innosetup --yes --no-progress
+
+      - name: Compile installer
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss
+
+      - name: Upload installer as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aLiGN-Setup
+          path: installer/output/aLiGN-Setup.exe
+          if-no-files-found: error
+
+      # Only publish a GitHub Release asset when a vX.Y.Z tag triggered the run
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/output/aLiGN-Setup.exe
+          generate_release_notes: true
