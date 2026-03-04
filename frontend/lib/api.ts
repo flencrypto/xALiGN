@@ -186,6 +186,44 @@ export const accountsCsvApi = {
   },
 };
 
+// ── Website Swoop ──────────────────────────────────────────────────────────
+
+export interface SwoopPersonnel {
+  name: string;
+  role?: string | null;
+  linkedin?: string | null;
+  x_handle?: string | null;
+}
+
+export interface SwoopIntel {
+  company_name?: string;
+  type?: string;
+  location?: string;
+  tags?: string[];
+  key_personnel?: SwoopPersonnel[];
+  recent_news?: string[];
+  stock_ticker?: string | null;
+  triggers?: string[];
+  intel_summary?: string;
+  suggested_touchpoint?: string;
+  raw_response?: string;
+}
+
+export interface SwoopResult {
+  status: string;
+  account_id: number;
+  created: boolean;
+  intel: SwoopIntel;
+}
+
+export const swoopApi = {
+  swoop: (url: string) =>
+    request<SwoopResult>('/accounts/swoop', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    }),
+};
+
 // ── Opportunities ──────────────────────────────────────────────────────────
 
 export const opportunitiesApi = {

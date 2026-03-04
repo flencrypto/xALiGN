@@ -7,6 +7,9 @@ python-multipart==0.0.22
 aiofiles==23.2.1
 httpx==0.27.0
 
+# HTML parsing (Website Swoop)
+beautifulsoup4==4.12.3
+
 # Document parsing
 pdfplumber==0.11.0
 python-docx==1.1.2

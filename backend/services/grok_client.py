@@ -95,6 +95,53 @@ async def research_company(website: str, crawl_text: str) -> dict[str, Any]:
         raise
 
 
+async def swoop_company(url: str, page_title: str, page_text: str) -> dict[str, Any]:
+    """
+    Use Grok to extract a full structured account record from crawled company content.
+
+    Returns a dict with keys:
+      company_name, type, location, tags,
+      key_personnel (list of {name, role, linkedin, x_handle}),
+      recent_news (list of str), stock_ticker,
+      triggers (list of str), intel_summary, suggested_touchpoint.
+
+    Only public, professionally available information is used.
+    """
+    system_prompt = (
+        "You are an expert sales intelligence analyst. "
+        "Extract a complete, structured company profile from the provided webpage content. "
+        "Only use publicly available information. "
+        "Return ONLY strictly valid JSON – no markdown, no code fences, no extra text – with these keys:\n"
+        "  company_name (string),\n"
+        "  type (one of: Operator, Hyperscale, Contractor, Colocation, Developer, Enterprise, Other),\n"
+        "  location (string – city/country or region),\n"
+        "  tags (list of short lowercase strings, e.g. [\"ai\", \"renewable\", \"2025-launch\"]),\n"
+        "  key_personnel (list of objects: {name, role, linkedin, x_handle} – use null for unknown fields),\n"
+        "  recent_news (list of up to 5 recent headline strings about the company),\n"
+        "  stock_ticker (string like 'NASDAQ:MSFT' if publicly listed, else null),\n"
+        "  triggers (list of up to 5 short trigger signal strings, e.g. funding rounds, hiring spikes, expansions),\n"
+        "  intel_summary (string – 2-3 sentence summary of why this company is a target),\n"
+        "  suggested_touchpoint (string – a short draft LinkedIn outreach message to the key decision-maker)."
+    )
+    user_content = (
+        f"Company URL: {url}\n"
+        f"Page title: {page_title}\n\n"
+        f"Page content:\n{page_text[:7000]}"
+    )
+
+    raw = ""
+    try:
+        raw = await _chat(system_prompt, user_content, max_tokens=2000)
+        clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        logger.warning("Grok returned non-JSON for website swoop; wrapping raw text")
+        return {"raw_response": raw, "company_name": page_title or "Unknown"}
+    except Exception as exc:
+        logger.error("Grok website swoop failed: %s", exc)
+        raise
+
+
 async def research_social_media(company_name: str, crawl_text: str) -> dict[str, Any]:
     """
     Use Grok to synthesise recent LinkedIn and X.com (Twitter) posts for a company.
