@@ -195,11 +195,17 @@ def suggest_opportunity_links(
     if not call:
         raise HTTPException(404, "Call record not found")
 
+    if point_index < 0:
+        raise HTTPException(422, "point_index must be a non-negative integer")
+
     try:
         key_points: list[dict] = json.loads(call.key_points or "[]")
         point = key_points[point_index]
     except (IndexError, json.JSONDecodeError, TypeError):
         raise HTTPException(404, "Key point not found")
+
+    if not isinstance(point, dict):
+        raise HTTPException(422, f"Key point {point_index} is not a valid object (got {type(point).__name__})")
 
     keyword = (point.get("mentioned_job_title") or point.get("text") or "")[:80]
     company = point.get("mentioned_company") or call.company_name or ""
@@ -279,11 +285,17 @@ async def link_key_point(
     if not call:
         raise HTTPException(404, "Call record not found")
 
+    if point_index < 0:
+        raise HTTPException(422, "point_index must be a non-negative integer")
+
     try:
         key_points: list[dict] = json.loads(call.key_points or "[]")
         point = key_points[point_index]
     except (IndexError, json.JSONDecodeError, TypeError):
         raise HTTPException(404, "Key point not found")
+
+    if not isinstance(point, dict):
+        raise HTTPException(422, f"Key point {point_index} is not a valid object (got {type(point).__name__})")
 
     if opportunity_id is not None:
         # Link to an existing Opportunity
