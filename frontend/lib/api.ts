@@ -579,3 +579,141 @@ export const callsApi = {
       { method: 'POST' },
     ),
 };
+
+// ── Lead-Time Intelligence ────────────────────────────────────────────────
+
+export interface LeadTimeItem {
+  id: number;
+  category: string;
+  manufacturer?: string;
+  model_ref?: string;
+  description: string;
+  lead_weeks_min: number;
+  lead_weeks_max: number;
+  lead_weeks_typical?: number;
+  region?: string;
+  notes?: string;
+  source?: string;
+  last_verified?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const leadTimeApi = {
+  list: (category?: string, region?: string) =>
+    request<LeadTimeItem[]>(
+      `/lead-times${category || region ? `?${new URLSearchParams({ ...(category ? { category } : {}), ...(region ? { region } : {}) }).toString()}` : ''}`,
+    ),
+  create: (data: Partial<LeadTimeItem>) =>
+    request<LeadTimeItem>('/lead-times', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<LeadTimeItem>) =>
+    request<LeadTimeItem>(`/lead-times/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: number) => request<void>(`/lead-times/${id}`, { method: 'DELETE' }),
+  seed: () =>
+    request<LeadTimeItem[]>('/lead-times/seed', { method: 'POST' }),
+};
+
+// ── Bid Debrief & Learning Loop ───────────────────────────────────────────
+
+export interface BidDebrief {
+  id: number;
+  bid_id: number;
+  outcome: 'won' | 'lost' | 'withdrawn' | 'no_award';
+  our_score?: number;
+  winner_score?: number;
+  our_price?: number;
+  winner_price?: number;
+  evaluation_criteria?: string;
+  client_feedback?: string;
+  strengths?: string;
+  weaknesses?: string;
+  winning_company?: string;
+  lessons_learned?: string;
+  process_improvements?: string;
+  bid_manager?: string;
+  debrief_date?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface LearningInsight {
+  total_bids_debriefed: number;
+  wins: number;
+  losses: number;
+  win_rate_pct: number;
+  avg_our_score?: number;
+  avg_winner_score?: number;
+  avg_price_gap_pct?: number;
+  top_strengths: string[];
+  top_weaknesses: string[];
+  common_winners: string[];
+}
+
+export const debriefApi = {
+  get: (bidId: number) => request<BidDebrief>(`/bids/${bidId}/debrief`),
+  create: (bidId: number, data: Partial<BidDebrief>) =>
+    request<BidDebrief>(`/bids/${bidId}/debrief`, { method: 'POST', body: JSON.stringify({ ...data, bid_id: bidId }) }),
+  update: (bidId: number, data: Partial<BidDebrief>) =>
+    request<BidDebrief>(`/bids/${bidId}/debrief`, { method: 'PATCH', body: JSON.stringify(data) }),
+  list: () => request<BidDebrief[]>('/debriefs'),
+  insights: () => request<LearningInsight>('/debriefs/insights'),
+};
+
+// ── Procurement Frameworks ─────────────────────────────────────────────────
+
+export interface ProcurementFramework {
+  id: number;
+  name: string;
+  authority: string;
+  reference?: string;
+  categories?: string;
+  status: 'active' | 'expiring_soon' | 'expired' | 'pending' | 'not_listed';
+  start_date?: string;
+  expiry_date?: string;
+  url?: string;
+  region?: string;
+  notes?: string;
+  we_are_listed: boolean;
+  lot_numbers?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const frameworksApi = {
+  list: (status?: string, region?: string, we_are_listed?: boolean) =>
+    request<ProcurementFramework[]>(
+      `/frameworks${
+        status || region || we_are_listed !== undefined
+          ? `?${new URLSearchParams({
+              ...(status ? { status } : {}),
+              ...(region ? { region } : {}),
+              ...(we_are_listed !== undefined ? { we_are_listed: String(we_are_listed) } : {}),
+            }).toString()}`
+          : ''
+      }`,
+    ),
+  create: (data: Partial<ProcurementFramework>) =>
+    request<ProcurementFramework>('/frameworks', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<ProcurementFramework>) =>
+    request<ProcurementFramework>(`/frameworks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: number) => request<void>(`/frameworks/${id}`, { method: 'DELETE' }),
+};
+
+// ── Export helpers (direct download URLs) ────────────────────────────────────
+
+export const exportApi = {
+  pursuitPackPdfUrl: (bidId: number) => `${BASE_URL}/bids/${bidId}/export/pursuit-pack-pdf`,
+  tenderResponseDocxUrl: (bidId: number) => `${BASE_URL}/bids/${bidId}/export/tender-response-docx`,
+  complianceMatrixXlsxUrl: (bidId: number) => `${BASE_URL}/bids/${bidId}/export/compliance-matrix-xlsx`,
+};
+
+// ── Compliance Answer Generation ──────────────────────────────────────────────
+
+export const complianceAnswerApi = {
+  generate: (bidId: number, itemId: number, companyContext?: string) =>
+    request<ComplianceItem>(`/bids/${bidId}/compliance/${itemId}/generate-answer`, {
+      method: 'POST',
+      body: JSON.stringify({ company_context: companyContext ?? null }),
+    }),
+};
+

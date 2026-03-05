@@ -16,15 +16,16 @@ export default function Header({ title, action }: HeaderProps) {
       style={{
         backgroundImage: "url('/header-bg.jpg')",
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundPosition: 'center 30%',
+        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Dark overlay so text stays readable */}
-      <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+      {/* Dark overlay so text stays readable over the photo */}
+      <div className="absolute inset-0 bg-background/75 backdrop-blur-sm pointer-events-none" />
 
       {/* Content sits above overlay */}
-      <h1 className="relative z-10 text-xl font-semibold text-text-main tracking-tight">{title}</h1>
-      <div className="relative z-10 flex items-center gap-3">
+      <h1 className="relative text-xl font-semibold text-text-main tracking-tight drop-shadow-sm">{title}</h1>
+      <div className="relative flex items-center gap-3">
         {action && <div>{action}</div>}
         {/* Dark / Light toggle */}
         <button
