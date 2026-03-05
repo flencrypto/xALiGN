@@ -36,6 +36,95 @@ body {
   --align-accent: #00E5FF;
 }
 
+/* =========================================================
+   SEMANTIC TOKENS (OKLCH channels) — Tailwind-friendly
+   ========================================================= */
+
+/* Optional: light defaults (can be minimal if you only run dark) */
+:root {
+  --radius: .625rem; /* matches your setup */
+
+  /* semantic channels */
+  --background: 100% 0 0;
+  --foreground: 14.5% 0 0;
+
+  --card: 100% 0 0;
+  --card-foreground: 14.5% 0 0;
+
+  --popover: 100% 0 0;
+  --popover-foreground: 14.5% 0 0;
+
+  --primary: 14.5% 0 0;
+  --primary-foreground: 100% 0 0;
+
+  --secondary: 95% .0058 264.53;
+  --secondary-foreground: 14.5% 0 0;
+
+  --muted: 96.7% .003 264.542;
+  --muted-foreground: 55.1% .027 264.364;
+
+  --accent: 96.7% .003 264.542;
+  --accent-foreground: 14.5% 0 0;
+
+  --destructive: 63.7% .237 25.331;
+  --destructive-foreground: 100% 0 0;
+
+  /* borders + rings */
+  --border: 92.8% .006 264.531;
+  --input: 92.8% .006 264.531;
+  --ring: 70.8% 0 0;
+
+  /* sidebar semantic */
+  --sidebar: 98.5% 0 0;
+  --sidebar-foreground: 14.5% 0 0;
+  --sidebar-border: 92.8% .006 264.531;
+  --sidebar-ring: 70.8% 0 0;
+
+  /* brand channels (pulled from your OKLCH palette) */
+  --brand-cyan: 71.5% .143 215.221;    /* = --color-cyan-500 */
+  --brand-violet: 62.7% .265 303.9;    /* = --color-purple-500 */
+}
+
+/* ✅ ALiGN DASHBOARD DARK */
+.dark {
+  /* graphite base built from your gray scale */
+  --background: 21% .034 264.665;       /* gray-900 */
+  --foreground: 96.7% .003 264.542;     /* gray-100 */
+
+  --card: 27.8% .033 256.848;           /* gray-800 */
+  --card-foreground: 96.7% .003 264.542;
+
+  --popover: 27.8% .033 256.848;
+  --popover-foreground: 96.7% .003 264.542;
+
+  /* accent behavior: cyan primary, violet secondary highlight */
+  --primary: var(--brand-cyan);
+  --primary-foreground: 21% .034 264.665; /* readable on cyan */
+
+  --secondary: 37.3% .034 259.733;      /* gray-700 (raised surface) */
+  --secondary-foreground: 96.7% .003 264.542;
+
+  --muted: 27.8% .033 256.848;          /* use with opacity in UI */
+  --muted-foreground: 70.7% .022 261.325; /* gray-400 */
+
+  --accent: 37.3% .034 259.733;         /* hover/selected surface */
+  --accent-foreground: 96.7% .003 264.542;
+
+  --destructive: 63.7% .237 25.331;
+  --destructive-foreground: 100% 0 0;
+
+  /* Hairline borders + subtle input fill */
+  --border: 100% 0 0;                   /* use as border-border/8 etc */
+  --input: 100% 0 0;
+  --ring: 78.9% .154 211.53;            /* cyan-400 */
+
+  /* sidebar aligns with background */
+  --sidebar: 21% .034 264.665;
+  --sidebar-foreground: 96.7% .003 264.542;
+  --sidebar-border: 100% 0 0;
+  --sidebar-ring: 78.9% .154 211.53;
+}
+
 /* container */
 
 .align-logo-container {
