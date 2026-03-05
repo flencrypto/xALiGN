@@ -6,15 +6,15 @@ Uses Grok AI to extract structured signals from call transcripts.
 
 import json
 import logging
-import os
 
 from backend.services import grok_client
+from backend.services.governance import GovernanceLogger, needs_human_review
 
 logger = logging.getLogger("align.transcription")
 
-_EXTRACTION_PROMPT = """
-You are a sales intelligence analyst.
+_SYSTEM_PROMPT = "You are a sales intelligence analyst."
 
+_EXTRACTION_USER_TEMPLATE = """
 Analyse the following call transcript and extract structured signals.
 Return ONLY valid JSON in this exact format:
 {{
@@ -56,34 +56,58 @@ async def analyse_transcript(transcript: str) -> dict:
             "next_steps": "AI analysis unavailable – XAI_API_KEY not configured.",
         }
 
-    prompt = _EXTRACTION_PROMPT.format(transcript=transcript[:8000])  # cap at 8k chars
+    _TASK = "transcript_analysis"
+    _TEMP = grok_client._TASK_TEMPERATURES[_TASK]
+    user_content = _EXTRACTION_USER_TEMPLATE.format(transcript=transcript[:8000])
 
+    result: dict = {}
+    input_tokens = output_tokens = 0
     try:
-        from openai import AsyncOpenAI
-
-        client = AsyncOpenAI(
-            api_key=os.environ.get("XAI_API_KEY", ""),
-            base_url="https://api.x.ai/v1",
+        raw, input_tokens, output_tokens = await grok_client._chat(
+            _SYSTEM_PROMPT,
+            user_content,
+            max_tokens=512,
+            temperature=_TEMP,
+            task=_TASK,
         )
-        response = await client.chat.completions.create(
-            model="grok-3-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,
-        )
-        raw = response.choices[0].message.content or "{}"
         start = raw.find("{")
         end = raw.rfind("}") + 1
         if start >= 0 and end > start:
-            return json.loads(raw[start:end])
+            result = json.loads(raw[start:end])
     except Exception as exc:
         logger.warning("Transcript analysis failed: %s", exc)
 
-    return {
-        "sentiment_score": None,
-        "competitor_mentions": [],
-        "budget_signals": [],
-        "timeline_mentions": [],
-        "risk_language": [],
-        "objection_categories": [],
-        "next_steps": "Analysis failed – review transcript manually.",
-    }
+    if not result:
+        result = {
+            "sentiment_score": None,
+            "competitor_mentions": [],
+            "budget_signals": [],
+            "timeline_mentions": [],
+            "risk_language": [],
+            "objection_categories": [],
+            "next_steps": "Analysis failed – review transcript manually.",
+        }
+
+    # Extract confidence from result; fall back to neutral 0.65
+    confidence = 0.65
+    for key in ("confidence", "overall_confidence", "confidence_level"):
+        val = result.get(key)
+        if val is not None:
+            try:
+                confidence = float(val)
+                break
+            except (TypeError, ValueError):
+                continue
+
+    GovernanceLogger.log(
+        worker_name="grok_client.transcript_analysis",
+        model=grok_client._TASK_MODELS.get(_TASK, grok_client._DEFAULT_MODEL),
+        temperature=_TEMP,
+        system_prompt=_SYSTEM_PROMPT,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        confidence=confidence,
+        validation_outcome="ok",
+        extra={"human_review_queued": needs_human_review(confidence)},
+    )
+    return result
