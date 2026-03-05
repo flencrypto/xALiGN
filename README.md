@@ -27,6 +27,8 @@ aLiGN replaces your messy stack of spreadsheets, email chains, SharePoint folder
 - Python 3.11+
 - (Optional) Docker + Docker Compose
 
+> **Windows users:** see the [Windows Installation Guide](docs/windows-install.md) for step-by-step instructions, including a one-click installer option.
+
 ### Option A — Docker Compose (recommended)
 
 ```bash
