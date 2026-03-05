@@ -136,6 +136,8 @@ PAGES = {
     "🔍  Intelligence":   "intelligence",
     "📑  Tenders":        "tenders",
     "📞  Calls":          "calls",
+    "⏱  Lead Times":     "lead_times",
+    "🏛  Frameworks":     "frameworks",
 }
 
 page_label = st.sidebar.radio("Navigate", list(PAGES.keys()), label_visibility="collapsed")
@@ -650,6 +652,96 @@ def page_bids() -> None:
         else:
             st.caption("No compliance items yet.")
 
+    # ── Export downloads ──────────────────────────────────────────────────────
+    st.divider()
+    st.markdown("##### 📥 Export")
+    col_pdf, col_word, col_xl = st.columns(3)
+    col_pdf.markdown(
+        f"[⬇ Pursuit Pack PDF]({API_URL}/bids/{bid_id}/export/pursuit-pack-pdf)",
+        unsafe_allow_html=True,
+    )
+    col_word.markdown(
+        f"[⬇ Tender Response Word]({API_URL}/bids/{bid_id}/export/tender-response-docx)",
+        unsafe_allow_html=True,
+    )
+    col_xl.markdown(
+        f"[⬇ Compliance Matrix Excel]({API_URL}/bids/{bid_id}/export/compliance-matrix-xlsx)",
+        unsafe_allow_html=True,
+    )
+
+    # ── Bid debrief ────────────────────────────────────────────────────────────
+    st.divider()
+    st.markdown("##### 📝 Bid Debrief")
+    existing_debrief = _get(f"/bids/{bid_id}/debrief")
+    if existing_debrief:
+        out = existing_debrief.get("outcome", "—")
+        outcome_icon = {"won": "🏆", "lost": "❌", "withdrawn": "↩️", "no_award": "⚪"}.get(out, "?")
+        st.markdown(f"**Outcome:** {outcome_icon} {out.replace('_', ' ').title()}")
+        cols = st.columns(4)
+        if existing_debrief.get("our_score") is not None:
+            cols[0].metric("Our Score",    existing_debrief["our_score"])
+        if existing_debrief.get("winner_score") is not None:
+            cols[1].metric("Winner Score", existing_debrief["winner_score"])
+        if existing_debrief.get("our_price") and existing_debrief.get("winner_price"):
+            gap = (existing_debrief["our_price"] - existing_debrief["winner_price"]) / existing_debrief["winner_price"] * 100
+            cols[2].metric("Price Gap", f"{gap:+.1f}%")
+        if existing_debrief.get("winning_company"):
+            cols[3].metric("Winner", existing_debrief["winning_company"])
+        if existing_debrief.get("strengths"):
+            st.markdown(f"**Strengths:** {existing_debrief['strengths']}")
+        if existing_debrief.get("weaknesses"):
+            st.markdown(f"**Weaknesses:** {existing_debrief['weaknesses']}")
+        if existing_debrief.get("lessons_learned"):
+            st.info(f"💡 **Lessons:** {existing_debrief['lessons_learned']}")
+
+    with st.expander("✏️ Record / Update Debrief", expanded=existing_debrief is None):
+        with st.form("bid_debrief_form"):
+            col1, col2 = st.columns(2)
+            outcome  = col1.selectbox("Outcome *", ["won", "lost", "withdrawn", "no_award"],
+                                      index=["won","lost","withdrawn","no_award"].index(
+                                          existing_debrief.get("outcome", "lost")) if existing_debrief else 1)
+            winner_co = col2.text_input("Winning company",
+                                         value=existing_debrief.get("winning_company","") if existing_debrief else "")
+            c1, c2, c3, c4 = st.columns(4)
+            our_score    = c1.number_input("Our score",    0.0, 10.0, float(existing_debrief.get("our_score") or 0) if existing_debrief else 0.0, 0.1)
+            win_score    = c2.number_input("Winner score", 0.0, 10.0, float(existing_debrief.get("winner_score") or 0) if existing_debrief else 0.0, 0.1)
+            our_price    = c3.number_input("Our price £",  0.0, step=10000.0, value=float(existing_debrief.get("our_price") or 0) if existing_debrief else 0.0)
+            win_price    = c4.number_input("Winner price £", 0.0, step=10000.0, value=float(existing_debrief.get("winner_price") or 0) if existing_debrief else 0.0)
+            feedback = st.text_area("Client feedback", value=existing_debrief.get("client_feedback","") if existing_debrief else "")
+            strengths= st.text_area("Strengths",       value=existing_debrief.get("strengths","") if existing_debrief else "")
+            weaknesses=st.text_area("Weaknesses",      value=existing_debrief.get("weaknesses","") if existing_debrief else "")
+            lessons  = st.text_area("Lessons learned", value=existing_debrief.get("lessons_learned","") if existing_debrief else "")
+            improvements=st.text_area("Process improvements", value=existing_debrief.get("process_improvements","") if existing_debrief else "")
+            bid_mgr  = st.text_input("Bid manager",    value=existing_debrief.get("bid_manager","") if existing_debrief else "")
+            if st.form_submit_button("Save Debrief", type="primary"):
+                payload = {
+                    "bid_id": bid_id, "outcome": outcome,
+                    "our_score":    our_score    if our_score    > 0 else None,
+                    "winner_score": win_score    if win_score    > 0 else None,
+                    "our_price":    our_price    if our_price    > 0 else None,
+                    "winner_price": win_price    if win_price    > 0 else None,
+                    "client_feedback":      feedback     or None,
+                    "strengths":            strengths    or None,
+                    "weaknesses":           weaknesses   or None,
+                    "winning_company":      winner_co    or None,
+                    "lessons_learned":      lessons      or None,
+                    "process_improvements": improvements or None,
+                    "bid_manager":          bid_mgr      or None,
+                }
+                if existing_debrief:
+                    try:
+                        import requests as _req
+                        r = _req.patch(f"{API_URL}/bids/{bid_id}/debrief", json=payload, timeout=10)
+                        r.raise_for_status()
+                        st.success("✅ Debrief updated")
+                    except Exception as exc:
+                        st.error(f"Update failed: {exc}")
+                else:
+                    result = _post(f"/bids/{bid_id}/debrief", payload)
+                    if result:
+                        st.success("✅ Debrief saved")
+                st.rerun()
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Page: Estimating
@@ -1067,6 +1159,211 @@ def page_calls() -> None:
                         st.markdown(f"- {s}")
 
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Page: Lead Times
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def page_lead_times() -> None:
+    st.title("⏱ Lead-Time Intelligence")
+    st.caption("Equipment delivery windows — switchgear, UPS, chillers, generators & more")
+
+    CATEGORIES = [
+        "switchgear", "ups", "chiller", "generator", "pdu",
+        "crac", "transformer", "busbar", "battery", "other",
+    ]
+    CAT_ICONS = {
+        "switchgear": "⚡", "ups": "🔋", "chiller": "❄️", "generator": "🛢️",
+        "pdu": "🔌", "crac": "💨", "transformer": "🔧", "busbar": "📊",
+        "battery": "🔋", "other": "📦",
+    }
+
+    col_filter, col_region, col_seed = st.columns([2, 2, 1])
+    with col_filter:
+        cat_filter = st.selectbox("Category", ["All"] + CATEGORIES, key="lt_cat")
+    with col_region:
+        region_filter = st.text_input("Region", placeholder="e.g. UK", key="lt_region")
+    with col_seed:
+        st.write("")
+        if st.button("⚡ Seed Defaults", help="Load default dataset"):
+            result = _post("/lead-times/seed", {})
+            if result is not None:
+                if isinstance(result, list) and len(result) == 0:
+                    st.info("All default items already loaded.")
+                else:
+                    st.success(f"✅ Seeded {len(result) if isinstance(result, list) else '?'} items")
+                st.rerun()
+
+    params: dict = {}
+    if cat_filter != "All":
+        params["category"] = cat_filter
+    if region_filter:
+        params["region"] = region_filter
+
+    items = _get("/lead-times", params=params) or []
+    if not items:
+        st.info("No lead-time data. Use ⚡ Seed Defaults to load standard DC equipment data.")
+        return
+
+    # Colour-code lead time
+    def lt_colour(weeks_min: int) -> str:
+        if weeks_min <= 12:
+            return "🟢"
+        if weeks_min <= 24:
+            return "🟡"
+        return "🔴"
+
+    df = pd.DataFrame(
+        [
+            {
+                "Cat": CAT_ICONS.get(i.get("category", ""), "📦"),
+                "Category":      i.get("category"),
+                "Manufacturer":  i.get("manufacturer") or "—",
+                "Model":         i.get("model_ref") or "—",
+                "Description":   (i.get("description") or "")[:60],
+                "Lead (weeks)":  f"{lt_colour(i.get('lead_weeks_min', 0))} {i.get('lead_weeks_min')}–{i.get('lead_weeks_max')}w",
+                "Typical":       f"{i.get('lead_weeks_typical', '—')}w" if i.get("lead_weeks_typical") else "—",
+                "Region":        i.get("region") or "—",
+                "Source":        i.get("source") or "—",
+            }
+            for i in items
+        ]
+    )
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.caption(f"{len(items)} item(s)")
+
+    # ── Add item form ─────────────────────────────────────────────────────────
+    st.divider()
+    with st.expander("➕ Add Lead-Time Item", expanded=False):
+        with st.form("add_lt"):
+            col1, col2 = st.columns(2)
+            cat      = col1.selectbox("Category *", CATEGORIES)
+            mfr      = col2.text_input("Manufacturer")
+            model    = col1.text_input("Model Ref")
+            region   = col2.text_input("Region", value="UK")
+            desc     = st.text_input("Description *")
+            col3, col4, col5 = st.columns(3)
+            wmin = col3.number_input("Min weeks *", min_value=1, step=1)
+            wmax = col4.number_input("Max weeks *", min_value=1, step=1)
+            source = col5.text_input("Source")
+            notes  = st.text_area("Notes")
+            if st.form_submit_button("Add Item", type="primary"):
+                if not desc:
+                    st.warning("Description is required.")
+                elif wmax < wmin:
+                    st.warning("Max weeks must be ≥ min weeks.")
+                else:
+                    result = _post("/lead-times", {
+                        "category": cat, "manufacturer": mfr or None, "model_ref": model or None,
+                        "description": desc, "lead_weeks_min": int(wmin), "lead_weeks_max": int(wmax),
+                        "region": region or None, "source": source or None, "notes": notes or None,
+                    })
+                    if result:
+                        st.success(f"✅ Item added (ID {result['id']})")
+                        st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Page: Frameworks
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def page_frameworks() -> None:
+    st.title("🏛 Procurement Frameworks")
+    st.caption("Track framework agreements, DPS, and procurement routes")
+
+    STATUS_ICONS = {
+        "active": "🟢", "expiring_soon": "🟡", "expired": "🔴",
+        "pending": "🔵", "not_listed": "⚪",
+    }
+
+    col_status, col_listed = st.columns(2)
+    with col_status:
+        status_filter = st.selectbox(
+            "Filter by status",
+            ["All", "active", "expiring_soon", "expired", "pending", "not_listed"],
+            key="fw_status",
+        )
+    with col_listed:
+        listed_filter = st.selectbox(
+            "Listing status",
+            ["All", "We are listed", "Not listed"],
+            key="fw_listed",
+        )
+
+    params: dict = {}
+    if status_filter != "All":
+        params["status"] = status_filter
+    if listed_filter == "We are listed":
+        params["we_are_listed"] = "true"
+    elif listed_filter == "Not listed":
+        params["we_are_listed"] = "false"
+
+    frameworks = _get("/frameworks", params=params) or []
+
+    # KPIs
+    if frameworks:
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Active",        sum(1 for f in frameworks if f.get("status") == "active"))
+        col2.metric("We Are Listed", sum(1 for f in frameworks if f.get("we_are_listed")))
+        col3.metric("Expiring Soon", sum(1 for f in frameworks if f.get("status") == "expiring_soon"))
+        col4.metric("Expired",       sum(1 for f in frameworks if f.get("status") == "expired"))
+
+    if not frameworks:
+        st.info("No frameworks yet. Add one below.")
+    else:
+        df = pd.DataFrame(
+            [
+                {
+                    "Status":    STATUS_ICONS.get(f.get("status", ""), "⚪") + " " + f.get("status", ""),
+                    "Name":      f.get("name"),
+                    "Authority": f.get("authority"),
+                    "Reference": f.get("reference") or "—",
+                    "Listed?":   "✅" if f.get("we_are_listed") else "—",
+                    "Expiry":    f.get("expiry_date") or "—",
+                    "Region":    f.get("region") or "—",
+                }
+                for f in frameworks
+            ]
+        )
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.caption(f"{len(frameworks)} framework(s)")
+
+    # ── Add / Edit form ───────────────────────────────────────────────────────
+    st.divider()
+    with st.expander("➕ Add Framework", expanded=False):
+        with st.form("add_fw"):
+            col1, col2 = st.columns(2)
+            name      = col1.text_input("Framework Name *")
+            authority = col2.text_input("Contracting Authority *")
+            reference = col1.text_input("Reference / Lot")
+            region    = col2.text_input("Region", value="UK")
+            status    = col1.selectbox(
+                "Status", ["active", "expiring_soon", "expired", "pending", "not_listed"]
+            )
+            we_listed = col2.checkbox("We are listed")
+            start_d   = col1.date_input("Start Date", value=None)
+            expiry_d  = col2.date_input("Expiry Date", value=None)
+            url       = st.text_input("Framework URL")
+            notes     = st.text_area("Notes")
+            if st.form_submit_button("Add Framework", type="primary"):
+                if not name or not authority:
+                    st.warning("Name and Authority are required.")
+                else:
+                    result = _post("/frameworks", {
+                        "name": name, "authority": authority,
+                        "reference": reference or None, "region": region or None,
+                        "status": status, "we_are_listed": we_listed,
+                        "start_date":  start_d.isoformat()  if start_d  else None,
+                        "expiry_date": expiry_d.isoformat() if expiry_d else None,
+                        "url": url or None, "notes": notes or None,
+                    })
+                    if result:
+                        st.success(f"✅ Framework added (ID {result['id']})")
+                        st.rerun()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Router
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1080,6 +1377,8 @@ _PAGE_HANDLERS = {
     "intelligence": page_intelligence,
     "tenders":      page_tenders,
     "calls":        page_calls,
+    "lead_times":   page_lead_times,
+    "frameworks":   page_frameworks,
 }
 
 _PAGE_HANDLERS[page]()

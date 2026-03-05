@@ -599,11 +599,19 @@ export interface LeadTimeItem {
   updated_at?: string;
 }
 
+// ── Internal helper: build optional query string ─────────────────────────────
+
+function _qs(params: Record<string, string | boolean | undefined>): string {
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== '');
+  if (entries.length === 0) return '';
+  return '?' + new URLSearchParams(
+    entries.map(([k, v]) => [k, String(v)] as [string, string]),
+  ).toString();
+}
+
 export const leadTimeApi = {
   list: (category?: string, region?: string) =>
-    request<LeadTimeItem[]>(
-      `/lead-times${category || region ? `?${new URLSearchParams({ ...(category ? { category } : {}), ...(region ? { region } : {}) }).toString()}` : ''}`,
-    ),
+    request<LeadTimeItem[]>(`/lead-times${_qs({ category, region })}`),
   create: (data: Partial<LeadTimeItem>) =>
     request<LeadTimeItem>('/lead-times', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: number, data: Partial<LeadTimeItem>) =>
@@ -682,15 +690,7 @@ export interface ProcurementFramework {
 export const frameworksApi = {
   list: (status?: string, region?: string, we_are_listed?: boolean) =>
     request<ProcurementFramework[]>(
-      `/frameworks${
-        status || region || we_are_listed !== undefined
-          ? `?${new URLSearchParams({
-              ...(status ? { status } : {}),
-              ...(region ? { region } : {}),
-              ...(we_are_listed !== undefined ? { we_are_listed: String(we_are_listed) } : {}),
-            }).toString()}`
-          : ''
-      }`,
+      `/frameworks${_qs({ status, region, ...(we_are_listed !== undefined ? { we_are_listed } : {}) })}`,
     ),
   create: (data: Partial<ProcurementFramework>) =>
     request<ProcurementFramework>('/frameworks', { method: 'POST', body: JSON.stringify(data) }),
