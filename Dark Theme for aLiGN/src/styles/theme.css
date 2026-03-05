@@ -1,4 +1,5 @@
 @theme {
+  /* ── Brand tokens (single source of truth) ── */
   --color-background: #0A0F1C;
   --color-surface: #161F33;
   --color-border-subtle: #1F2A44;
@@ -17,6 +18,45 @@
 
   --radius-card: 8px;
   --radius-button: 6px;
+
+  /* Tailwind radius scale aliases */
+  --radius-md: var(--radius-button);
+  --radius-lg: var(--radius-card);
+
+  /* ── shadcn/Radix semantic aliases ── */
+  --color-foreground: var(--color-text-main);
+
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text-main);
+
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-text-main);
+
+  --color-primary-foreground: #041018;
+  --color-secondary-foreground: var(--color-text-main);
+
+  --color-muted: color-mix(in oklab, var(--color-surface) 60%, var(--color-background));
+  --color-muted-foreground: var(--color-text-muted);
+
+  --color-accent: color-mix(in oklab, var(--color-surface) 80%, var(--color-primary) 20%);
+  --color-accent-foreground: var(--color-text-main);
+
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: var(--color-border-subtle);
+  --color-input: var(--color-border-subtle);
+  --color-ring: var(--color-primary);
+
+  /* ── Sidebar tokens (required by ui/sidebar.tsx) ── */
+  --color-sidebar: var(--color-background);
+  --color-sidebar-foreground: var(--color-text-main);
+  --color-sidebar-border: var(--color-border-subtle);
+  --color-sidebar-ring: var(--color-primary);
+  --color-sidebar-accent: color-mix(in oklab, var(--color-surface) 80%, var(--color-primary) 20%);
+  --color-sidebar-accent-foreground: var(--color-text-main);
+  --color-sidebar-primary: var(--color-primary);
+  --color-sidebar-primary-foreground: #041018;
 }
 
 @layer base {
@@ -26,9 +66,15 @@
     --foreground: var(--color-text-main);
   }
 
+  /* Global border default: ensures components using plain `border` / `border-b`
+     without an explicit color class still render a subtle, on-brand border. */
+  *, ::before, ::after {
+    border-color: color-mix(in oklab, var(--color-border) 70%, transparent);
+  }
+
   body {
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
