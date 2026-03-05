@@ -23,7 +23,7 @@ from backend.core.config import settings  # XAI_API_KEY lives here
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
 contacts_router = APIRouter(prefix="/contacts", tags=["Contacts"])
-signals_router = APIRouter(prefix="/trigger-signals", tags=["TriggerSignals"])
+signals_router = APIRouter(prefix="/trigger-signals", tags=["Trigger Signals"])
 
 
 # ── Website Swoop (NEW – enhanced extraction) ─────────────────────────────────
