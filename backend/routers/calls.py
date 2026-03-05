@@ -1,28 +1,30 @@
-"""Call Intelligence router.
-
-Endpoints:
-  POST /api/v1/calls/analyse   – Submit transcript text for analysis
-  GET  /api/v1/calls           – List call intelligence records
-  GET  /api/v1/calls/{id}      – Get a single call intelligence record
-  DELETE /api/v1/calls/{id}    – Delete a call record
-"""
+"""Call Intelligence router – now with direct audio upload + Grok transcription + analysis."""
 
 import json
 import logging
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models.tender import CallIntelligence
 from backend.schemas.tender import CallIntelligenceCreate, CallIntelligenceRead
 from backend.services.ai_workers import CallIntelWorker
+from backend.core.config import settings
 
 logger = logging.getLogger("align.calls")
 
 router = APIRouter(prefix="/calls", tags=["Call Intelligence"])
 
 _call_intel_worker = CallIntelWorker()
+
+# Supported audio formats
+_AUDIO_ALLOWED_TYPES = {
+    "audio/mpeg", "audio/mp3",
+    "audio/wav",
+    "audio/x-m4a", "audio/m4a",
+    "audio/ogg",
+}
+_AUDIO_MAX_BYTES = 50 * 1024 * 1024  # 50 MB
 
 
 def _load_list(value: str | None) -> list[str] | None:
@@ -38,7 +40,6 @@ def _load_list(value: str | None) -> list[str] | None:
 
 
 def _serialise_next_steps(value) -> str | None:
-    """Normalise recommended_next_steps to a stored string value."""
     if value is None:
         return None
     if isinstance(value, list):
@@ -63,33 +64,54 @@ def _call_to_read(obj: CallIntelligence) -> CallIntelligenceRead:
     )
 
 
+# ── ANALYSE (now accepts audio OR text) ───────────────────────────────────────
 @router.post(
     "/analyse",
     response_model=CallIntelligenceRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Submit a call transcript for AI analysis",
+    summary="Upload audio OR paste transcript → Grok transcribes + analyses",
 )
-async def analyse_call(payload: CallIntelligenceCreate, db: Session = Depends(get_db)):
-    """
-    Analyse a call transcript using Grok AI to extract structured signals:
-    sentiment, competitor mentions, budget signals, timeline mentions,
-    risk language, objection categories, and next steps.
+async def analyse_call(
+    file: UploadFile | None = File(None),
+    company_name: str | None = None,
+    executive_name: str | None = None,
+    transcript: str | None = None,   # fallback for text-only
+    db: Session = Depends(get_db),
+):
+    """Upload audio file (mp3/wav/m4a) OR send transcript text.
+    Grok transcribes audio automatically, then extracts sentiment, signals, next steps, etc."""
+    
+    # ── 1. Get transcript (audio or text) ─────────────────────────────────
+    if file:
+        if file.content_type not in _AUDIO_ALLOWED_TYPES:
+            raise HTTPException(415, f"Unsupported audio type: {file.content_type}. Use mp3/wav/m4a.")
 
-    Requires XAI_API_KEY for AI-powered extraction. Without it, the transcript
-    is stored with empty signal fields.
-    """
-    if not payload.transcript:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="transcript is required for analysis",
-        )
+        audio_data = await file.read()
+        if len(audio_data) > _AUDIO_MAX_BYTES:
+            raise HTTPException(413, "Audio file too large (max 50 MB)")
 
-    signals = await _call_intel_worker.run(payload.transcript)
+        logger.info(f"Transcribing audio file: {file.filename} ({len(audio_data)/1024/1024:.1f} MB)")
 
+        # Grok native audio transcription
+        transcript_text = await _call_intel_worker.transcribe_audio(audio_data, file.filename)
+
+    elif transcript and transcript.strip():
+        transcript_text = transcript.strip()
+    else:
+        raise HTTPException(422, "Either upload an audio file OR provide transcript text")
+
+    if not transcript_text:
+        raise HTTPException(422, "Could not extract any transcript from the audio")
+
+    # ── 2. Run full analysis ───────────────────────────────────────────────
+    logger.info(f"Running Grok analysis on {len(transcript_text)} characters")
+    signals = await _call_intel_worker.run(transcript_text)
+
+    # ── 3. Save to database ───────────────────────────────────────────────
     obj = CallIntelligence(
-        company_name=payload.company_name,
-        executive_name=payload.executive_name,
-        transcript=payload.transcript,
+        company_name=company_name,
+        executive_name=executive_name,
+        transcript=transcript_text,
         sentiment_score=signals.get("sentiment_score"),
         competitor_mentions=json.dumps(signals.get("competitor_mentions") or []),
         budget_signals=json.dumps(signals.get("budget_signals") or []),
@@ -98,17 +120,17 @@ async def analyse_call(payload: CallIntelligenceCreate, db: Session = Depends(ge
         objection_categories=json.dumps(signals.get("objections") or signals.get("objection_categories") or []),
         next_steps=_serialise_next_steps(signals.get("recommended_next_steps")),
     )
+
     db.add(obj)
     db.commit()
     db.refresh(obj)
+
+    logger.info(f"Call intelligence record created – ID {obj.id} (sentiment: {obj.sentiment_score})")
     return _call_to_read(obj)
 
 
-@router.get(
-    "",
-    response_model=list[CallIntelligenceRead],
-    summary="List call intelligence records",
-)
+# ── List, Get, Delete (unchanged but cleaned) ────────────────────────────────
+@router.get("", response_model=list[CallIntelligenceRead])
 def list_calls(
     company_name: str | None = None,
     skip: int = 0,
@@ -121,26 +143,19 @@ def list_calls(
     return [_call_to_read(obj) for obj in q.offset(skip).limit(limit).all()]
 
 
-@router.get(
-    "/{call_id}",
-    response_model=CallIntelligenceRead,
-    summary="Get a single call intelligence record",
-)
+@router.get("/{call_id}", response_model=CallIntelligenceRead)
 def get_call(call_id: int, db: Session = Depends(get_db)):
     obj = db.get(CallIntelligence, call_id)
     if not obj:
-        raise HTTPException(status_code=404, detail="Call intelligence record not found")
+        raise HTTPException(404, "Call intelligence record not found")
     return _call_to_read(obj)
 
 
-@router.delete(
-    "/{call_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a call intelligence record",
-)
+@router.delete("/{call_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_call(call_id: int, db: Session = Depends(get_db)):
     obj = db.get(CallIntelligence, call_id)
     if not obj:
-        raise HTTPException(status_code=404, detail="Call intelligence record not found")
+        raise HTTPException(404, "Call intelligence record not found")
     db.delete(obj)
     db.commit()
+    logger.info(f"Deleted call intelligence record {call_id}")
