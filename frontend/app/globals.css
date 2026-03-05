@@ -2,14 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Brand token layer ── */
+
 :root {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
+  --background: #050505;
+  --foreground: #F0F0F0;
+  --surface:    #0F0F0F;
+  --accent:     #00E5FF;
+  --metallic:   #C8C8C8;
 }
 
 body {
+  background-color: var(--background);
   color: var(--foreground);
-  background: var(--background);
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 @layer utilities {
@@ -23,11 +29,11 @@ body {
    =========================== */
 
 :root {
-  --align-bg: #0F1115;
-  --align-grid: rgba(255,255,255,0.03);
-  --align-beam: #cfd6dd;
-  --align-text: #e6edf3;
-  --align-accent: #30E7FF;
+  --align-bg:     #050505;
+  --align-grid:   rgba(0,229,255,0.03);
+  --align-beam:   #C8C8C8;
+  --align-text:   #F0F0F0;
+  --align-accent: #00E5FF;
 }
 
 /* container */
@@ -62,6 +68,12 @@ body {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--align-text);
+  filter: drop-shadow(0 0 12px rgba(0,229,255,0.6));
+  transition: filter 0.3s ease;
+}
+
+.align-logo:hover {
+  filter: drop-shadow(0 0 18px rgba(0,229,255,0.9));
 }
 
 /* the small a */
@@ -98,8 +110,8 @@ body {
   border-radius: 4px;
 
   box-shadow:
-    0 0 6px rgba(48,231,255,.35),
-    0 0 20px rgba(48,231,255,.15);
+    0 0 6px rgba(0,229,255,.35),
+    0 0 20px rgba(0,229,255,.15);
 
   transition: box-shadow 0.3s ease;
 }
@@ -124,18 +136,18 @@ body {
       90deg,
       transparent,
       transparent 40px,
-      rgba(48,231,255,.4) 41px,
+      rgba(0,229,255,.4) 41px,
       transparent 42px
     );
   opacity: .35;
 }
 
-/* hover animation */
+/* hover beam glow (overridden by parent filter, kept for specificity) */
 
 .align-logo:hover .beam {
   box-shadow:
-    0 0 10px rgba(48,231,255,.6),
-    0 0 30px rgba(48,231,255,.3);
+    0 0 10px rgba(0,229,255,.6),
+    0 0 30px rgba(0,229,255,.3);
 }
 
 /* responsive */
@@ -173,3 +185,21 @@ body {
   margin-left: 5px;
 }
 
+/* ── Light mode overrides ── */
+
+html.light {
+  --background: #F0F4F8;
+  --foreground: #0A0A0A;
+  --surface:    #FFFFFF;
+  --accent:     #00B8CC;
+  --metallic:   #444444;
+  --align-bg:   #F0F4F8;
+  --align-text: #0A0A0A;
+  --align-beam: #444444;
+  --align-grid: rgba(0,184,204,0.06);
+}
+
+html.light body {
+  background-color: var(--background);
+  color: var(--foreground);
+}

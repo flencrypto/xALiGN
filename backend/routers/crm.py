@@ -179,35 +179,27 @@ async def import_from_hubspot(
                     skipped_contacts += 1
                     continue
 
-                # Skip if a contact with this email already exists
-                if email:
-                    existing_contact = (
-                        db.query(Contact).filter(Contact.email == email).first()
+                # Skip if a contact with this email already exists (O(1) set lookup)
+                if email and email in existing_contact_emails:
+                    skipped_contacts += 1
+                    continue
+
+                # Associate with local Account via HubSpot associations API
+                # Look up company association via HubSpot's associations API
+                account_id: int | None = None
+                try:
+                    assoc = await _hs_get(
+                        client,
+                        f"{_HS_BASE}/crm/v3/objects/contacts/{hs_contact_id}/associations/companies",
+                        token,
                     )
-                    if existing_contact:
-                        skipped_contacts += 1
-                        continue
-
-                # Associate with local Account via HubSpot company ID
-                hs_company_id = (p.get("associatedcompanyid") or "").strip()
-                account_id: int | None = hs_id_to_account.get(hs_company_id)
-
-                if account_id is None:
-                    # Try to find account by fetching company association from HubSpot
-                    if hs_company_id:
-                        try:
-                            assoc = await _hs_get(
-                                client,
-                                f"{_HS_BASE}/crm/v3/objects/contacts/{hs_contact_id}/associations/companies",
-                                token,
-                            )
-                            for result in assoc.get("results", []):
+                    for result in assoc.get("results", []):
                                 cid = str(result.get("id", ""))
                                 if cid in hs_id_to_account:
                                     account_id = hs_id_to_account[cid]
                                     break
-                        except HTTPException:
-                            pass
+                except HTTPException:
+                    pass
 
                 if account_id is None:
                     skipped_contacts += 1

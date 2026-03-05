@@ -25,7 +25,7 @@ export default function Sidebar() {
     <>
       {/* Mobile toggle */}
       <button
-        className="fixed top-4 left-4 z-50 md:hidden bg-slate-700 text-white p-2 rounded"
+        className="fixed top-4 left-4 z-50 md:hidden bg-align-surface border border-align-metallic/20 text-align-text p-2 rounded"
         onClick={() => setOpen(!open)}
         aria-label="Toggle sidebar"
       >
@@ -43,14 +43,14 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-56 bg-slate-800 border-r border-slate-700 z-40 flex flex-col
+          fixed top-0 left-0 h-full w-56 bg-align-surface border-r border-align-metallic/10 z-40 flex flex-col
           transition-transform duration-200
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0 md:static md:h-screen
         `}
       >
-        {/* Logo */}
-        <div className="px-5 py-4 border-b border-slate-700">
+        {/* Logo — blueprint grid panel */}
+        <div className="px-5 py-4 border-b border-align-metallic/10 bg-grid-palantir [background-size:40px_40px]">
           <AlignLogo compact />
         </div>
 
@@ -67,8 +67,8 @@ export default function Sidebar() {
                 className={`
                   flex items-center gap-3 px-5 py-3 text-sm font-medium transition-colors
                   ${isActive
-                    ? 'bg-blue-600/20 text-blue-400 border-r-2 border-blue-500'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    ? 'bg-align-accent/10 text-align-accent border-r-2 border-align-accent'
+                    : 'text-align-muted hover:bg-align-metallic/5 hover:text-align-text'
                   }
                 `}
               >
@@ -80,9 +80,9 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-slate-700">
-          <p className="text-xs text-slate-500">AI-native Bid & Delivery OS</p>
-          <p className="text-xs text-slate-600 mt-1">v0.1.0</p>
+        <div className="px-5 py-4 border-t border-align-metallic/10">
+          <p className="text-xs text-align-muted">AI-native Bid & Delivery OS</p>
+          <p className="text-xs text-align-muted/50 mt-1">v0.1.0</p>
         </div>
       </aside>
     </>
