@@ -44,10 +44,10 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { label: 'Total Accounts', value: stats.totalAccounts, color: 'text-blue-400', bg: 'bg-blue-500/10', icon: '🏢' },
-    { label: 'Active Opportunities', value: stats.activeOpportunities, color: 'text-green-400', bg: 'bg-green-500/10', icon: '🎯' },
-    { label: 'Active Bids', value: stats.activeBids, color: 'text-yellow-400', bg: 'bg-yellow-500/10', icon: '📋' },
-    { label: 'Win Rate', value: `${stats.winRate}%`, color: 'text-purple-400', bg: 'bg-purple-500/10', icon: '🏆' },
+    { label: 'Total Accounts', value: stats.totalAccounts, color: 'text-primary', bg: 'bg-primary/10', icon: '🏢' },
+    { label: 'Active Opportunities', value: stats.activeOpportunities, color: 'text-success', bg: 'bg-success/10', icon: '🎯' },
+    { label: 'Active Bids', value: stats.activeBids, color: 'text-warning', bg: 'bg-warning/10', icon: '📋' },
+    { label: 'Win Rate', value: `${stats.winRate}%`, color: 'text-secondary', bg: 'bg-secondary/10', icon: '🏆' },
   ];
 
   const quickActions = [
@@ -59,49 +59,49 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Header title="Dashboard" />
+      <Header title="Command Centre" />
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((card) => (
-            <div key={card.label} className={`${card.bg} border border-slate-700 rounded-xl p-5`}>
+            <div key={card.label} className={`${card.bg} border border-border-subtle rounded-xl p-5 card-hover`}>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-2xl">{card.icon}</span>
               </div>
               {loading ? (
-                <div className="h-8 w-16 bg-slate-700 rounded animate-pulse" />
+                <div className="h-8 w-16 bg-surface rounded animate-pulse" />
               ) : (
-                <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
+                <p className={`text-3xl font-bold font-mono ${card.color}`}>{card.value}</p>
               )}
-              <p className="text-slate-400 text-sm mt-1">{card.label}</p>
+              <p className="text-text-muted text-sm mt-1">{card.label}</p>
             </div>
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
-            <h2 className="text-white font-semibold mb-4">Recent Activity</h2>
+          <div className="bg-surface border border-border-subtle rounded-xl p-5">
+            <h2 className="text-text-main font-semibold mb-4 font-mono text-sm uppercase tracking-widest text-primary">[01] Recent Activity</h2>
             {loading ? (
-              <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-5 bg-slate-700 rounded animate-pulse" />)}</div>
+              <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-5 bg-background rounded animate-pulse" />)}</div>
             ) : activity.length === 0 ? (
-              <p className="text-slate-400 text-sm">No activity yet. Start by adding an account.</p>
+              <p className="text-text-muted text-sm">No activity yet. Start by adding an account.</p>
             ) : (
               <ul className="space-y-3">
                 {activity.map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                  <li key={i} className="flex items-center gap-3 text-sm text-text-main">
+                    <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 pulse-cyan" />
                     {item}
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
-            <h2 className="text-white font-semibold mb-4">Quick Actions</h2>
+          <div className="bg-surface border border-border-subtle rounded-xl p-5">
+            <h2 className="text-primary font-mono text-sm uppercase tracking-widest mb-4">[02] Quick Actions</h2>
             <div className="grid grid-cols-2 gap-3">
               {quickActions.map((action) => (
-                <Link key={action.href} href={action.href} className="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg p-4 transition-colors group">
+                <Link key={action.href} href={action.href} className="bg-background hover:bg-primary/5 border border-border-subtle hover:border-primary/50 rounded-lg p-4 transition-all group card-hover">
                   <span className="text-2xl block mb-2">{action.icon}</span>
-                  <p className="text-white text-sm font-medium group-hover:text-blue-400 transition-colors">{action.label}</p>
-                  <p className="text-slate-400 text-xs mt-1">{action.desc}</p>
+                  <p className="text-text-main text-sm font-medium group-hover:text-primary transition-colors">{action.label}</p>
+                  <p className="text-text-muted text-xs mt-1">{action.desc}</p>
                 </Link>
               ))}
             </div>

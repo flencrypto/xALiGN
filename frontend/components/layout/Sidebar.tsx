@@ -6,15 +6,15 @@ import { useState } from 'react';
 import AlignLogo from '@/components/layout/AlignLogo';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '⊞' },
-  { href: '/accounts', label: 'Accounts', icon: '🏢' },
-  { href: '/opportunities', label: 'Opportunities', icon: '🎯' },
-  { href: '/bids', label: 'Bids', icon: '📋' },
+  { href: '/dashboard', label: 'Command Centre', icon: '⊞' },
+  { href: '/accounts', label: 'Account Intel', icon: '🏢' },
+  { href: '/opportunities', label: 'Pipeline', icon: '🎯' },
+  { href: '/bids', label: 'Bid Packs', icon: '📋' },
   { href: '/estimating', label: 'Estimating', icon: '📐' },
   { href: '/intel', label: 'Intelligence', icon: '🔍' },
   { href: '/tenders', label: 'Tenders', icon: '📑' },
   { href: '/calls', label: 'Calls', icon: '📞' },
-  { href: '/blog', label: 'Blog', icon: '✍️' },
+  { href: '/blog', label: 'News Feed', icon: '✍️' },
 ];
 
 export default function Sidebar() {
@@ -25,7 +25,7 @@ export default function Sidebar() {
     <>
       {/* Mobile toggle */}
       <button
-        className="fixed top-4 left-4 z-50 md:hidden bg-align-surface border border-align-metallic/20 text-align-text p-2 rounded"
+        className="fixed top-4 left-4 z-50 md:hidden bg-surface border border-border-subtle text-text-main p-2 rounded"
         onClick={() => setOpen(!open)}
         aria-label="Toggle sidebar"
       >
@@ -43,19 +43,19 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-56 bg-align-surface border-r border-align-metallic/10 z-40 flex flex-col
+          fixed top-0 left-0 h-full w-64 border-r border-border-subtle z-40 flex flex-col glass-panel
           transition-transform duration-200
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0 md:static md:h-screen
         `}
       >
         {/* Logo — blueprint grid panel */}
-        <div className="px-5 py-4 border-b border-align-metallic/10 bg-grid-palantir [background-size:40px_40px]">
+        <div className="px-6 py-5 border-b border-border-subtle bg-blueprint">
           <AlignLogo compact />
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 overflow-y-auto">
+        <nav className="flex-1 py-4 px-3 overflow-y-auto flex flex-col gap-1">
           {navItems.map((item) => {
             const isActive =
               item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
@@ -65,13 +65,16 @@ export default function Sidebar() {
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={`
-                  flex items-center gap-3 px-5 py-3 text-sm font-medium transition-colors
+                  flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all relative overflow-hidden
                   ${isActive
-                    ? 'bg-align-accent/10 text-align-accent border-r-2 border-align-accent'
-                    : 'text-align-muted hover:bg-align-metallic/5 hover:text-align-text'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text-muted hover:bg-white/5 hover:text-text-main'
                   }
                 `}
               >
+                {isActive && (
+                  <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary glow-primary" />
+                )}
                 <span className="text-base">{item.icon}</span>
                 {item.label}
               </Link>
@@ -80,9 +83,9 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-align-metallic/10">
-          <p className="text-xs text-align-muted">AI-native Bid & Delivery OS</p>
-          <p className="text-xs text-align-muted/50 mt-1">v0.1.0</p>
+        <div className="px-5 py-4 border-t border-border-subtle">
+          <p className="text-xs text-text-muted font-mono">AI-native Bid &amp; Delivery OS</p>
+          <p className="text-xs text-text-faint font-mono mt-1">v0.1.0</p>
         </div>
       </aside>
     </>

@@ -2,39 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Brand token layer ── */
+/* ── Dark theme token layer ── */
 
 :root {
-  --background: #050505;
-  --foreground: #F0F0F0;
-  --surface:    #0F0F0F;
-  --accent:     #00E5FF;
+  color-scheme: dark;
+
+  /* Core palette */
+  --color-background:   #0A0F1C;
+  --color-surface:      #161F33;
+  --color-border-subtle:#1F2A44;
+  --color-primary:      #00E5FF;
+  --color-primary-dark: #00B4D8;
+  --color-secondary:    #6366F1;
+
+  /* Text */
+  --color-text-main:  #F1F5F9;
+  --color-text-muted: #94A3B8;
+  --color-text-faint: #64748B;
+
+  /* Semantic */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger:  #EF4444;
+
+  /* Legacy aliases kept for backwards compatibility */
+  --background: var(--color-background);
+  --foreground: var(--color-text-main);
+  --surface:    var(--color-surface);
+  --accent:     var(--color-primary);
   --metallic:   #C8C8C8;
+
+  /* Logo system */
+  --align-bg:     var(--color-background);
+  --align-grid:   rgba(0,229,255,0.04);
+  --align-beam:   #C8C8C8;
+  --align-text:   var(--color-text-main);
+  --align-accent: var(--color-primary);
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: "Inter", system-ui, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text-main);
+  font-family: var(--font-inter, "Inter", system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Light mode overrides ── */
+
+html.light {
+  color-scheme: light;
+  --color-background:    #F0F4F8;
+  --color-surface:       #FFFFFF;
+  --color-border-subtle: #CBD5E1;
+  --color-primary:       #00B8CC;
+  --color-primary-dark:  #0099B0;
+  --color-text-main:     #0A0A0A;
+  --color-text-muted:    #475569;
+  --color-text-faint:    #94A3B8;
+  --align-bg:            #F0F4F8;
+  --align-text:          #0A0A0A;
+  --align-beam:          #444444;
+  --align-grid:          rgba(0,184,204,0.06);
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Blueprint grid background */
+  .bg-blueprint {
+    background-image:
+      linear-gradient(to right, rgba(30, 58, 95, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 58, 95, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center center;
+  }
+
+  /* Glow utilities */
+  .glow-primary {
+    box-shadow: 0 0 15px 0 rgba(0, 229, 255, 0.3);
+  }
+
+  .glow-primary-hover:hover {
+    box-shadow: 0 0 20px 0 rgba(0, 229, 255, 0.4);
+  }
+
+  /* Frosted glass panel */
+  .glass-panel {
+    background-color: rgba(22, 31, 51, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 229, 255, 0.1);
+  }
+
+  /* Card hover lift */
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px -2px rgba(0, 229, 255, 0.15);
+  }
+
+  /* Pulsing cyan indicator */
+  .pulse-cyan {
+    animation: pulse-cyan-anim 2s infinite;
+  }
+
+  @keyframes pulse-cyan-anim {
+    0%   { box-shadow: 0 0 0 0   rgba(0, 229, 255, 0.7); }
+    70%  { box-shadow: 0 0 0 6px rgba(0, 229, 255, 0);   }
+    100% { box-shadow: 0 0 0 0   rgba(0, 229, 255, 0);   }
+  }
 }
 
 /* ===========================
    aLiGN Logo System
    =========================== */
-
-:root {
-  --align-bg:     #050505;
-  --align-grid:   rgba(0,229,255,0.03);
-  --align-beam:   #C8C8C8;
-  --align-text:   #F0F0F0;
-  --align-accent: #00E5FF;
-}
 
 /* container */
 

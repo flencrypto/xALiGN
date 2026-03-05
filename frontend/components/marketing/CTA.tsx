@@ -9,43 +9,43 @@ const pillars = [
 
 export default function CTA() {
   return (
-    <section className="py-32 bg-slate-900 border-t border-slate-800">
+    <section className="py-32 bg-background border-t border-border-subtle">
       <div className="max-w-6xl mx-auto px-6">
         {/* Investor narrative */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24">
           <div>
-            <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">
+            <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-4">
               The Problem
             </p>
-            <h2 className="text-4xl font-bold text-white tracking-tight mb-6">
+            <h2 className="text-4xl font-bold text-text-main tracking-tight mb-6">
               Infrastructure bids are won and lost on process.
             </h2>
-            <p className="text-slate-400 leading-relaxed mb-4">
+            <p className="text-text-muted leading-relaxed mb-4">
               Data centre refurb and new build projects are complex, high-value,
               and unforgiving. Bid teams operate across spreadsheets, shared
               drives, and disconnected tools — leading to missed compliance,
               undetected scope gaps, and poor handover quality.
             </p>
-            <p className="text-slate-400 leading-relaxed">
+            <p className="text-text-muted leading-relaxed">
               The cost of a lost bid isn&apos;t just the fee — it&apos;s the
               weeks of team time spent on a disorganised process that could have
               been caught earlier.
             </p>
           </div>
           <div>
-            <p className="text-emerald-400 text-sm font-semibold tracking-widest uppercase mb-4">
+            <p className="text-success text-sm font-semibold tracking-widest uppercase mb-4">
               The Category
             </p>
-            <h2 className="text-4xl font-bold text-white tracking-tight mb-6">
+            <h2 className="text-4xl font-bold text-text-main tracking-tight mb-6">
               A new category: Bid Operating System.
             </h2>
-            <p className="text-slate-400 leading-relaxed mb-4">
+            <p className="text-text-muted leading-relaxed mb-4">
               aLiGN isn&apos;t a CRM. It isn&apos;t a document manager.
               It is a structured operating system — purpose-built for
               infrastructure bid teams — that enforces process, surfaces risk,
               and creates institutional knowledge.
             </p>
-            <p className="text-slate-400 leading-relaxed">
+            <p className="text-text-muted leading-relaxed">
               Powered by AI agents that enrich accounts, score risk, detect
               scope omissions, and validate compliance — automatically.
             </p>
@@ -57,26 +57,26 @@ export default function CTA() {
           {pillars.map((p) => (
             <div
               key={p.label}
-              className="bg-slate-800 border border-slate-700 rounded-xl p-5"
+              className="bg-surface border border-border-subtle rounded-xl p-5"
             >
-              <p className="text-white font-semibold text-sm mb-2">{p.label}</p>
-              <p className="text-slate-400 text-xs leading-relaxed">{p.desc}</p>
+              <p className="text-text-main font-semibold text-sm mb-2">{p.label}</p>
+              <p className="text-text-muted text-xs leading-relaxed">{p.desc}</p>
             </div>
           ))}
         </div>
 
         {/* Final CTA */}
         <div className="text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-text-main tracking-tight mb-4">
             Ready to take control?
           </h2>
-          <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
+          <p className="text-text-muted text-lg mb-10 max-w-xl mx-auto">
             Enter the aLiGN platform and start building a structured,
             auditable bid operation.
           </p>
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-lg font-semibold text-base transition-colors"
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-text-main px-10 py-4 rounded-lg font-semibold text-base transition-colors"
           >
             Enter Dashboard
             <svg

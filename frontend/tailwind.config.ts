@@ -10,16 +10,36 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        /* New dark-theme semantic tokens */
+        background:     "var(--color-background)",
+        surface:        "var(--color-surface)",
+        "border-subtle":"var(--color-border-subtle)",
+        primary:        "var(--color-primary)",
+        "primary-dark": "var(--color-primary-dark)",
+        secondary:      "var(--color-secondary)",
+        "text-main":    "var(--color-text-main)",
+        "text-muted":   "var(--color-text-muted)",
+        "text-faint":   "var(--color-text-faint)",
+        success:        "var(--color-success)",
+        warning:        "var(--color-warning)",
+        danger:         "var(--color-danger)",
+
+        /* Legacy align.* tokens kept for backwards compatibility */
         align: {
-          bg:       "#050505",
-          surface:  "#0F0F0F",
-          accent:   "#00E5FF",
+          bg:       "var(--align-bg)",
+          surface:  "var(--color-surface)",
+          accent:   "var(--color-primary)",
           metallic: "#C8C8C8",
-          text:     "#F0F0F0",
-          muted:    "#888888",
+          text:     "var(--color-text-main)",
+          muted:    "var(--color-text-muted)",
         },
+
+        /* Keep foreground alias */
+        foreground: "var(--foreground)",
+      },
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       backgroundImage: {
         "grid-palantir":

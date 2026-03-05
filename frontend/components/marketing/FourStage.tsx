@@ -6,7 +6,7 @@ const stages = [
     description:
       "Identify and track high-value infrastructure accounts. Monitor trigger signals — expansions, renewals, tenders — before competitors do.",
     detail: "Account scoring · Trigger signals · DC footprint detection",
-    color: "text-blue-400",
+    color: "text-primary",
     border: "border-blue-500/20",
     bg: "bg-blue-500/5",
   },
@@ -47,21 +47,21 @@ const stages = [
 
 export default function FourStage() {
   return (
-    <section id="platform" className="py-32 bg-slate-950">
+    <section id="platform" className="py-32 bg-background">
       <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="max-w-2xl mb-20">
-          <p className="text-blue-400 text-sm font-semibold tracking-widest uppercase mb-4">
+          <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-4">
             The Platform
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-text-main tracking-tight mb-6">
             Four stages.
             <br />
-            <span className="text-slate-400 font-light">
+            <span className="text-text-muted font-light">
               One operating system.
             </span>
           </h2>
-          <p className="text-slate-400 text-lg leading-relaxed">
+          <p className="text-text-muted text-lg leading-relaxed">
             aLiGN structures the entire bid lifecycle — from initial
             targeting to structured delivery handover — into a single, auditable
             platform.
@@ -80,10 +80,10 @@ export default function FourStage() {
                   {stage.number} — {stage.label}
                 </span>
               </div>
-              <h3 className="text-white text-2xl font-bold mb-3">
+              <h3 className="text-text-main text-2xl font-bold mb-3">
                 {stage.title}
               </h3>
-              <p className="text-slate-400 leading-relaxed mb-6">
+              <p className="text-text-muted leading-relaxed mb-6">
                 {stage.description}
               </p>
               <p className={`text-xs font-medium ${stage.color} opacity-70`}>
