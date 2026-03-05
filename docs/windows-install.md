@@ -76,10 +76,19 @@ Verify Docker is working by opening **PowerShell** or **Command Prompt** and run
 
 ```powershell
 docker --version
-docker compose version
 ```
 
-Both commands should print version numbers.
+Then check which Compose command is available on your system:
+
+```powershell
+# Try the newer built-in plugin first:
+docker compose version
+
+# If the above is not recognised, try the legacy standalone binary:
+docker-compose --version
+```
+
+Use whichever command prints a version number — that is the one to use in the steps below.
 
 ### 2 — Clone the repository
 
@@ -191,15 +200,26 @@ Open a **PowerShell** window in the repository root:
 ```powershell
 cd backend
 
-# Create and activate a virtual environment
+# Create a virtual environment
 python -m venv .venv
-.venv\Scripts\activate
 
+# Activate it (PowerShell)
+.\.venv\Scripts\Activate.ps1
+```
+
+> **Tip – ExecutionPolicy error?** If PowerShell blocks the script, run:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+> Then re-run `.\.venv\Scripts\Activate.ps1`. Alternatively, use **Command Prompt** instead and run `.venv\Scripts\activate.bat`.
+
+```powershell
 # Install dependencies
 pip install -r requirements.txt
 
-# Start the backend API server
-uvicorn main:app --reload --port 8000
+# Return to the repository root and start the backend API server
+cd ..
+uvicorn backend.main:app --reload --port 8000
 ```
 
 > **Tip:** If you see `python` not found, try `py -3` instead of `python`.
@@ -213,8 +233,8 @@ Open a **second PowerShell** window in the repository root:
 ```powershell
 cd frontend
 
-# Copy the environment file for the frontend
-copy ..\.env.example .env.local
+# Copy the environment file for the frontend (including any changes you just made)
+copy ..\.env .env.local
 ```
 
 Open `frontend\.env.local` and make sure this line is present (it should already be set):
@@ -275,12 +295,12 @@ npm config set prefix "$env:APPDATA\npm"
 
 If another process is already using port `3000` or `8000`, either stop that process or change the ports:
 
-- **Backend port:** pass `--port <number>` to `uvicorn`, and update `NEXT_PUBLIC_API_URL` in `.env` / `.env.local`.
-- **Frontend port:** run `npm run dev -- -p <number>`.
+- **Backend port:** pass `--port <number>` to `uvicorn`, and update `NEXT_PUBLIC_API_URL` in `.env` / `.env.local` to point to the new backend URL.
+- **Frontend port:** run `npm run dev -- -p <number>`. If you change the frontend port, also update the hard-coded allowed origin in `backend/main.py` (look for `allow_origins=["http://localhost:3000"]`) to match your new frontend URL (for example, `http://localhost:<number>`).
 
 ### "docker compose" vs "docker-compose"
 
-Newer versions of Docker Desktop ship `docker compose` (no hyphen) as a built-in plugin. Older installations use a separate `docker-compose` binary. Both commands work; if one fails, try the other.
+Newer versions of Docker Desktop ship `docker compose` (no hyphen) as a built-in plugin, while older installations use a separate `docker-compose` binary. Use whichever command is available on your system; if `docker compose` is not recognized, try `docker-compose`, and vice versa.
 
 ---
 
