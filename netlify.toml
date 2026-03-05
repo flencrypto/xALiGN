@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# aLiGN – Netlify configuration
+#
+# Deploys the Next.js 15 frontend from the /frontend subdirectory.
+#
+# Prerequisites (Netlify Site Settings → Environment Variables):
+#   NEXT_PUBLIC_API_URL   URL of your deployed backend, e.g.
+#                         https://api.yourdomain.com/api/v1
+#
+# Deploy via:
+#   1. Connect this repo to Netlify.
+#   2. Set NEXT_PUBLIC_API_URL in Netlify's environment variables.
+#   3. Netlify will auto-detect this file and build/deploy.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[build]
+  # The Next.js app lives in the /frontend subdirectory.
+  base    = "frontend"
+  command = "npm ci && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION            = "20"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Override NEXT_PUBLIC_API_URL in Netlify UI → do not hard-code secrets here.
+
+# ── Next.js App Router support ───────────────────────────────────────────────
+# The @netlify/plugin-nextjs plugin handles:
+#   • Server Components & Route Handlers
+#   • Image Optimisation
+#   • Middleware
+#   • Incremental Static Regeneration
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# ── Redirect rules ───────────────────────────────────────────────────────────
+# Catch-all fallback so that any direct URL (e.g. /dashboard) returns the
+# Next.js app rather than a 404.  The plugin handles most routing; this is
+# a belt-and-braces fallback.
+[[redirects]]
+  from   = "/*"
+  to     = "/.netlify/functions/___netlify-handler"
+  status = 200
+  force  = false
+
+# ── Headers ──────────────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+    Permissions-Policy     = "camera=(), microphone=(), geolocation=()"

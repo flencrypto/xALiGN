@@ -1,0 +1,17 @@
+# aLiGN Streamlit theme — mirrors the dark UI palette from the frontend.
+
+[theme]
+base            = "dark"
+primaryColor    = "#00E5FF"
+backgroundColor = "#0A0F1C"
+secondaryBackgroundColor = "#161F33"
+textColor       = "#F1F5F9"
+font            = "sans serif"
+
+[server]
+# Allow Streamlit Cloud and local runs without needing XSRF headers.
+enableXsrfProtection = false
+enableCORS           = false
+
+[browser]
+gatherUsageStats = false

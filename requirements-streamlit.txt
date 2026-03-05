@@ -1,0 +1,5 @@
+# Streamlit UI dependencies for aLiGN
+# Install with: pip install -r requirements-streamlit.txt
+streamlit>=1.35.0
+requests>=2.31.0
+pandas>=2.2.0
