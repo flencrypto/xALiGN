@@ -80,7 +80,7 @@ else:
 accounts = fetch("/accounts")
 opportunities = fetch("/opportunities")
 bids = fetch("/bids")
-signals = fetch("/signals")
+signals = fetch("/trigger-signals")
 
 # ── KPI strip ─────────────────────────────────────────────────────────────────
 
