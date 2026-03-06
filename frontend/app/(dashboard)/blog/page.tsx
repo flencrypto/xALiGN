@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import { blogApi, BlogPost, BlogPostSummary } from '@/lib/api';
+import IntegrationGate from '@/components/IntegrationGate';
+import { useSetupStatus } from '@/lib/useSetupStatus';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-surface text-text-muted border-border-subtle',
@@ -29,6 +31,8 @@ interface GenerateForm {
 }
 
 export default function BlogPage() {
+  const { isConfigured } = useSetupStatus();
+  const grokConfigured = isConfigured('grok_ai');
   const [posts, setPosts] = useState<BlogPostSummary[]>([]);
   const [selected, setSelected] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,12 +131,14 @@ export default function BlogPage() {
         {/* Top bar */}
         <div className="flex items-center justify-between">
           <p className="text-text-muted text-sm">{posts.length} blog post{posts.length !== 1 ? 's' : ''}</p>
-          <button
-            onClick={() => setShowGenerate(true)}
-            className="bg-primary hover:bg-blue-700 text-text-main px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            ✍️ Generate Post
-          </button>
+          <IntegrationGate feature="grok_ai" isConfigured={grokConfigured}>
+            <button
+              onClick={() => setShowGenerate(true)}
+              className="bg-primary hover:bg-blue-700 text-text-main px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              ✍️ Generate Post
+            </button>
+          </IntegrationGate>
         </div>
 
         {/* Generate Modal */}

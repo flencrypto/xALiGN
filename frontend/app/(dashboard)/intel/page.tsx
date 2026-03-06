@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import { intelApi, uploadsApi, CompanyIntel, CompanyIntelSummary, NewsItem, UploadedPhoto } from '@/lib/api';
+import IntegrationGate from '@/components/IntegrationGate';
+import { useSetupStatus } from '@/lib/useSetupStatus';
 
 const CATEGORY_COLORS: Record<string, string> = {
   expansion: 'bg-success/20 text-success border-success/30',
@@ -35,6 +37,8 @@ function tryParseJson(val?: string | null): string {
 }
 
 export default function IntelPage() {
+  const { isConfigured } = useSetupStatus();
+  const grokConfigured = isConfigured('grok_ai');
   const [companies, setCompanies] = useState<CompanyIntelSummary[]>([]);
   const [selected, setSelected] = useState<CompanyIntel | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -136,13 +140,15 @@ export default function IntelPage() {
               className="flex-1 bg-background border border-border-subtle rounded-lg px-4 py-2 text-text-main text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
               required
             />
-            <button
-              type="submit"
-              disabled={researching}
-              className="bg-primary hover:bg-blue-700 disabled:opacity-60 text-text-main px-5 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              {researching ? '⏳ Researching…' : 'Research'}
-            </button>
+            <IntegrationGate feature="grok_ai" isConfigured={grokConfigured}>
+              <button
+                type="submit"
+                disabled={researching}
+                className="bg-primary hover:bg-blue-700 disabled:opacity-60 text-text-main px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                {researching ? '⏳ Researching…' : 'Research'}
+              </button>
+            </IntegrationGate>
           </form>
           {error && <p className="text-danger text-sm mt-2">{error}</p>}
         </div>

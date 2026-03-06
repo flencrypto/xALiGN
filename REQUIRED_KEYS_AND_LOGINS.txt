@@ -1,0 +1,255 @@
+REQUIRED KEYS AND LOGINS — aLiGN
+Generated: 2026-03-06
+================================================================================
+
+This file lists every external credential, API key, and login required by aLiGN,
+per integration. Copy-paste the env var names into your .env file (backend root).
+
+IMPORTANT: All secrets must be set as SERVER-SIDE environment variables only.
+Never add them to NEXT_PUBLIC_ variables or client-side code.
+
+Run `GET /api/v1/setup/status` (or visit /setup in the UI) to check which
+integrations are currently configured on your running server.
+
+================================================================================
+1. GROK AI / xAI
+================================================================================
+
+What it unlocks
+---------------
+- Company Deep Research (/intel) — crawl + AI-extract company signals
+- Website Swoop (/intel) — one-click company URL → full Account record
+- Blog Post Generation (/blog) — AI-written institutional content
+- Intelligence Collectors (/intelligence) — News, Planning, Press Releases,
+  Job Signals, and Infrastructure announcement pipelines
+- Call Transcript Analysis (/calls) — sentiment, competitor, budget signals
+- Specialist Agents (/agents) — Build Captain, UI Surgeon, Test Pilot,
+  Data Curator, Ops Boss
+
+Required env vars (SERVER ONLY)
+---------------------------------
+  XAI_API_KEY=xai-your-key-here
+
+Optional env vars
+-----------------
+  AI_FALLBACK_MODEL=grok-3-mini       (default: grok-3-mini)
+  AI_CONFIDENCE_THRESHOLD=0.65        (suppress outputs below this)
+  AI_REVIEW_THRESHOLD=0.5             (flag for human review below this)
+  AI_MAX_CONTRACT_VALUE_GBP=10000000000
+  AI_MAX_CAPEX_GROWTH_PCT=500
+
+OAuth / login required?
+------------------------
+  No. API key only.
+
+Where to get it (step by step)
+-------------------------------
+  1. Go to https://x.ai/api and sign in (or create a free account).
+  2. Navigate to API Keys in your dashboard.
+  3. Click "Create API Key".
+  4. Copy the key — it starts with "xai-".
+  5. Add to your .env:  XAI_API_KEY=xai-your-key-here
+  6. Restart the backend server.
+
+Official link: https://x.ai/api
+Pricing:       https://x.ai/api#pricing (free tier available)
+
+Server-only note
+----------------
+  XAI_API_KEY must NEVER be set as a NEXT_PUBLIC_ variable or exposed to the
+  browser. All AI calls are made server-side (FastAPI backend).
+
+
+================================================================================
+2. AMAZON S3 (File Storage) — OPTIONAL
+================================================================================
+
+What it unlocks
+---------------
+  Cloud-hosted file uploads (photos, PDFs) via S3.
+  If not set, the app defaults to LOCAL filesystem storage (./uploads directory)
+  which works without any AWS credentials.
+  S3 is only needed in production multi-instance deployments.
+
+Required env vars (only when STORAGE_BACKEND=s3)
+-------------------------------------------------
+  STORAGE_BACKEND=s3
+  S3_BUCKET=your-bucket-name
+  S3_REGION=eu-west-2              (or your chosen region)
+  AWS_ACCESS_KEY_ID=...            (optional if using IAM instance profile)
+  AWS_SECRET_ACCESS_KEY=...        (optional if using IAM instance profile)
+
+OAuth / login required?
+------------------------
+  No. AWS IAM credentials only (or IAM instance role).
+
+Where to get it (step by step)
+-------------------------------
+  1. Sign in to the AWS Console: https://console.aws.amazon.com/
+  2. Create an S3 bucket in your preferred region.
+  3. Create an IAM user (or role) with the following S3 permissions:
+       s3:PutObject, s3:GetObject, s3:DeleteObject (on your bucket ARN)
+  4. Generate an Access Key for the IAM user (under Security Credentials).
+  5. Add to your .env:
+       STORAGE_BACKEND=s3
+       S3_BUCKET=my-align-uploads
+       S3_REGION=eu-west-2
+       AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+       AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  6. Restart the backend server.
+
+Official link: https://aws.amazon.com/s3/
+IAM setup:     https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started.html
+
+Server-only note
+----------------
+  AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must remain server-only.
+  Prefer IAM instance roles in production to avoid static key rotation.
+
+
+================================================================================
+3. CLERK AUTHENTICATION — OPTIONAL
+================================================================================
+
+What it unlocks
+---------------
+  User authentication and session management via Clerk.
+  By default AUTH_PROVIDER=none (open access — no login required).
+  Set AUTH_PROVIDER=clerk to enforce login on all API endpoints.
+
+Required env vars (only when AUTH_PROVIDER=clerk)
+--------------------------------------------------
+  AUTH_PROVIDER=clerk
+  CLERK_ISSUER=https://your-instance.clerk.accounts.dev
+  CLERK_SECRET_KEY=sk_...                  (server only)
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_... (frontend — safe for client)
+
+Optional env vars
+-----------------
+  CLERK_JWKS_URL=...  (auto-derived from CLERK_ISSUER if blank)
+
+OAuth / login required?
+------------------------
+  Yes. Users must sign in via Clerk's hosted UI or embedded component.
+
+Where to get it (step by step)
+-------------------------------
+  1. Create a free account at https://clerk.com
+  2. Create a new Application in the Clerk dashboard.
+  3. From API Keys → Frontend API, copy the Issuer URL.
+  4. From API Keys, copy the Secret Key (sk_...) and
+     Publishable Key (pk_...).
+  5. Add to your .env:
+       AUTH_PROVIDER=clerk
+       CLERK_ISSUER=https://your-instance.clerk.accounts.dev
+       CLERK_SECRET_KEY=sk_live_...
+  6. Add to your frontend .env.local:
+       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+  7. Restart both backend and frontend.
+
+Official link:   https://clerk.com/docs/quickstarts/nextjs
+Pricing:         https://clerk.com/pricing (free tier available)
+
+Server-only note
+----------------
+  CLERK_SECRET_KEY must remain server-only. Only
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is safe to expose to the browser.
+
+
+================================================================================
+4. AUTH0 AUTHENTICATION — OPTIONAL
+================================================================================
+
+What it unlocks
+---------------
+  User authentication via Auth0. Alternative to Clerk.
+  By default AUTH_PROVIDER=none (open access — no login required).
+  Set AUTH_PROVIDER=auth0 to enforce login on all API endpoints.
+
+Required env vars (only when AUTH_PROVIDER=auth0)
+--------------------------------------------------
+  AUTH_PROVIDER=auth0
+  AUTH0_DOMAIN=your-tenant.auth0.com
+  AUTH0_AUDIENCE=https://your-api-audience
+
+Optional env vars (for frontend login UI)
+-----------------------------------------
+  NEXT_PUBLIC_AUTH0_DOMAIN=your-tenant.auth0.com
+  NEXT_PUBLIC_AUTH0_CLIENT_ID=...
+
+OAuth / login required?
+------------------------
+  Yes. Users must sign in via Auth0's Universal Login.
+
+Where to get it (step by step)
+-------------------------------
+  1. Create a free account at https://auth0.com
+  2. In the Auth0 dashboard, go to Applications → APIs.
+  3. Create a new API. Set an Audience (e.g. https://align.yourdomain.com/api).
+  4. Note the Domain from the dashboard top-right (e.g. dev-xyz.auth0.com).
+  5. Add to your .env:
+       AUTH_PROVIDER=auth0
+       AUTH0_DOMAIN=dev-xyz.auth0.com
+       AUTH0_AUDIENCE=https://align.yourdomain.com/api
+  6. For frontend login, create a SPA Application and note the Client ID:
+       NEXT_PUBLIC_AUTH0_DOMAIN=dev-xyz.auth0.com
+       NEXT_PUBLIC_AUTH0_CLIENT_ID=your_client_id
+  7. Restart both backend and frontend.
+
+Official link:   https://auth0.com/docs/quickstart/backend/python
+Pricing:         https://auth0.com/pricing (free tier available)
+
+Server-only note
+----------------
+  AUTH0_AUDIENCE and backend-only API credentials must remain server-only.
+  Only NEXT_PUBLIC_AUTH0_* variables are safe for client-side use.
+
+
+================================================================================
+QUICK REFERENCE — .env TEMPLATE
+================================================================================
+
+Copy into .env at the backend root. Never commit this file.
+
+  # ── Required for AI features ─────────────────────────────────────────────
+  XAI_API_KEY=xai-your-key-here
+
+  # ── Optional: S3 File Storage (default: local) ──────────────────────────
+  # STORAGE_BACKEND=s3
+  # S3_BUCKET=your-bucket-name
+  # S3_REGION=eu-west-2
+  # AWS_ACCESS_KEY_ID=...
+  # AWS_SECRET_ACCESS_KEY=...
+
+  # ── Optional: Authentication (default: none / open access) ──────────────
+  # AUTH_PROVIDER=clerk
+  # CLERK_ISSUER=https://your-instance.clerk.accounts.dev
+  # CLERK_SECRET_KEY=sk_...
+  # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+
+  # ── Frontend ─────────────────────────────────────────────────────────────
+  # NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+  # CORS_ORIGINS=http://localhost:3000
+
+  # ── Database ─────────────────────────────────────────────────────────────
+  # DATABASE_URL=sqlite:///./align.db
+
+
+================================================================================
+HOW THE GATING SYSTEM WORKS
+================================================================================
+
+When a user triggers a feature that requires a missing integration:
+  1. The UI intercepts the click via IntegrationGate component.
+  2. A modal appears explaining EXACTLY what is missing, WHY it's needed,
+     and WHERE to get it.
+  3. A "Go to Setup →" button links to /setup for full instructions.
+  4. The server returns 503 with { error, missing: [...], setupPath: "/setup" }
+     if the API is called directly without the key.
+
+No secrets are exposed client-side. /api/v1/setup/status returns only boolean
+"configured" flags and env var NAMES (never values).
+
+================================================================================
+END OF FILE
+================================================================================

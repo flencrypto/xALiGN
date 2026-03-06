@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import { callsApi, CallIntelligence, KeyPoint, KeyPointSuggestResult } from '@/lib/api';
+import IntegrationGate from '@/components/IntegrationGate';
+import { useSetupStatus } from '@/lib/useSetupStatus';
 
 export default function CallsPage() {
+  const { isConfigured } = useSetupStatus();
+  const grokConfigured = isConfigured('grok_ai');
   const [calls, setCalls] = useState<CallIntelligence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,12 +150,14 @@ export default function CallsPage() {
       <Header
         title="Call Intelligence"
         action={
-          <button
-            onClick={() => setShowAnalyseModal(true)}
-            className="bg-primary hover:bg-primary-dark text-text-main text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            + Analyse Call
-          </button>
+          <IntegrationGate feature="grok_ai" isConfigured={grokConfigured}>
+            <button
+              onClick={() => setShowAnalyseModal(true)}
+              className="bg-primary hover:bg-primary-dark text-text-main text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              + Analyse Call
+            </button>
+          </IntegrationGate>
         }
       />
 

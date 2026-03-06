@@ -33,7 +33,9 @@ from backend.routers.uploads import router as uploads_router
 from backend.routers.calls import router as calls_router
 from backend.routers.crm import router as crm_router
 from backend.routers.processing import router as processing_router
+from backend.routers.agents import router as agents_router
 from backend.routers.projects import router as projects_router
+from backend.routers.setup import router as setup_router
 from backend.seed_data import run_seed
 from backend.core.config import settings
 from backend.services.scheduler import setup_scheduler
@@ -132,6 +134,8 @@ app.include_router(crm_router, prefix="/api/v1")
 app.include_router(leadtime_router, prefix="/api/v1")
 app.include_router(frameworks_router, prefix="/api/v1")
 app.include_router(intelligence_router, prefix="/api/v1")
+app.include_router(agents_router, prefix="/api/v1")
+app.include_router(setup_router, prefix="/api/v1")
 app.include_router(processing_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 

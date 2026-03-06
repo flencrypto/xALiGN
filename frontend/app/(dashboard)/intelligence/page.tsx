@@ -4,8 +4,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import { intelligenceApi, projectsApi, type ProjectStats, type IntelligenceStatus, type NewsArticle } from '@/lib/api';
+import IntegrationGate from '@/components/IntegrationGate';
+import { useSetupStatus } from '@/lib/useSetupStatus';
 
 export default function IntelligenceHubPage() {
+  const { isConfigured } = useSetupStatus();
+  const grokConfigured = isConfigured('grok_ai');
   const [stats, setStats] = useState<ProjectStats | null>(null);
   const [status, setStatus] = useState<IntelligenceStatus[]>([]);
   const [news, setNews] = useState<NewsArticle[]>([]);
@@ -102,13 +106,15 @@ export default function IntelligenceHubPage() {
                         </p>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleRun(col.key, col.fn)}
-                      disabled={running !== null}
-                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-mono rounded border border-primary/30 transition-all disabled:opacity-50"
-                    >
-                      {running === col.key ? 'Running…' : 'Run'}
-                    </button>
+                    <IntegrationGate feature="grok_ai" isConfigured={grokConfigured}>
+                      <button
+                        onClick={() => handleRun(col.key, col.fn)}
+                        disabled={running !== null}
+                        className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-mono rounded border border-primary/30 transition-all disabled:opacity-50"
+                      >
+                        {running === col.key ? 'Running…' : 'Run'}
+                      </button>
+                    </IntegrationGate>
                   </div>
                 );
               })}
