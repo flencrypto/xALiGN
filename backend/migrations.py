@@ -28,6 +28,11 @@ _MIGRATIONS: list[tuple[str, str, str]] = [
     ("company_intel", "x_posts",        "TEXT"),
     # call_intelligence – key points extracted from transcript
     ("call_intelligence", "key_points", "TEXT"),
+    # intelligence – processing layer fields
+    ("infrastructure_announcements", "confidence_score", "REAL"),
+    ("infrastructure_announcements", "signal_type",      "VARCHAR(100)"),
+    ("news_articles",               "confidence_score", "REAL"),
+    ("news_articles",               "signal_type",      "VARCHAR(100)"),
 ]
 
 

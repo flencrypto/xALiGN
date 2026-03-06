@@ -12,6 +12,7 @@ const navItems = [
   { href: '/bids', label: 'Bid Packs', icon: '📋' },
   { href: '/estimating', label: 'Estimating', icon: '📐' },
   { href: '/intel', label: 'Intelligence', icon: '🔍' },
+  { href: '/intelligence', label: 'Market Intelligence', icon: '🌐' },
   { href: '/tenders', label: 'Tenders', icon: '📑' },
   { href: '/calls', label: 'Calls', icon: '📞' },
   { href: '/lead-times', label: 'Lead Times', icon: '⏱' },

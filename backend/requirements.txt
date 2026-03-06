@@ -26,3 +26,10 @@ psycopg2-binary==2.9.9
 
 # S3 / object storage (production)
 boto3==1.34.131
+
+# Intelligence Collection Layer (BATCH 1)
+feedparser==6.0.11
+apscheduler==3.10.4
+
+# Data Processing Layer (BATCH 2)
+rapidfuzz==3.9.3

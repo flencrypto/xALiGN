@@ -6,6 +6,14 @@ from backend.models.debrief import BidDebrief
 from backend.models.estimating import ChecklistItem, EstimatingProject, ScopeGapItem
 from backend.models.framework import ProcurementFramework
 from backend.models.intel import BlogPost, CompanyIntel, ExecutiveProfile, NewsItem, UploadedPhoto
+from backend.models.projects import CompanyProfile, InfrastructureProject, OpportunitySignal
+from backend.models.intelligence import (
+    InfrastructureAnnouncement,
+    JobPostingSignal,
+    NewsArticle,
+    PlanningApplication,
+    VendorPressRelease,
+)
 from backend.models.leadtime import LeadTimeItem
 from backend.models.opportunity import Opportunity, QualificationScore
 from backend.models.tender import CallIntelligence, TenderAward
@@ -33,4 +41,12 @@ __all__ = [
     "UploadedPhoto",
     "TenderAward",
     "CallIntelligence",
+    "NewsArticle",
+    "PlanningApplication",
+    "VendorPressRelease",
+    "JobPostingSignal",
+    "InfrastructureAnnouncement",
+    "InfrastructureProject",
+    "CompanyProfile",
+    "OpportunitySignal",
 ]

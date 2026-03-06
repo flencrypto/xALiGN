@@ -740,3 +740,192 @@ export const complianceAnswerApi = {
     }),
 };
 
+
+// ── Intelligence Database Types ────────────────────────────────────────────
+
+export interface InfrastructureProject {
+  id: number;
+  name: string;
+  company?: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  capacity_mw?: number;
+  capex_millions?: number;
+  capex_currency?: string;
+  stage?: string;
+  project_type?: string;
+  partners?: string;
+  source_url?: string;
+  source_name?: string;
+  confidence_score?: number;
+  signal_type?: string;
+  is_duplicate?: boolean;
+  notes?: string;
+  detected_at?: string;
+}
+
+export interface CompanyProfile {
+  id: number;
+  name: string;
+  category?: string;
+  headquarters?: string;
+  stock_ticker?: string;
+  website?: string;
+  known_partners?: string;
+  total_capacity_mw?: number;
+  total_capex_millions?: number;
+  active_projects?: number;
+  regions_active?: string;
+  description?: string;
+}
+
+export interface OpportunitySignal {
+  id: number;
+  project_id?: number;
+  opportunity_type?: string;
+  title: string;
+  company?: string;
+  location?: string;
+  potential_suppliers?: string;
+  likelihood_score?: number;
+  estimated_value_millions?: number;
+  estimated_tender_date?: string;
+  source_signal_url?: string;
+  is_actioned?: boolean;
+  detected_at?: string;
+}
+
+export interface ProjectStats {
+  total_projects: number;
+  total_capacity_mw: number;
+  total_capex_millions: number;
+  by_stage: Record<string, number>;
+  by_type: Record<string, number>;
+  top_companies_by_mw: Array<{ company: string; total_mw: number }>;
+}
+
+export interface HeatmapPoint {
+  location: string;
+  project_count: number;
+  total_mw: number;
+  total_capex: number;
+  lat?: number;
+  lon?: number;
+}
+
+export interface NewsArticle {
+  id: number;
+  title: string;
+  url?: string;
+  source_name?: string;
+  summary?: string;
+  category?: string;
+  keywords_matched?: string;
+  published_at?: string;
+  source_type?: string;
+  fetched_at?: string;
+}
+
+export interface IntelligenceStatus {
+  collector: string;
+  record_count: number;
+  last_collected_at?: string;
+}
+
+// ── Intelligence API ───────────────────────────────────────────────────────
+
+export const intelligenceApi = {
+  // News
+  runNewsAggregator: () => request<{ status: string; records_collected: number }>('/intelligence/news/run', { method: 'POST' }),
+  listNews: (params?: { category?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set('category', params.category);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<NewsArticle[]>(`/intelligence/news?${qs}`);
+  },
+  // Planning
+  runPlanningScraper: () => request<{ status: string; records_collected: number }>('/intelligence/planning/run', { method: 'POST' }),
+  listPlanning: (params?: { is_data_centre?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.is_data_centre !== undefined) qs.set('is_data_centre', String(params.is_data_centre));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/planning?${qs}`);
+  },
+  // Press releases
+  runPressReleases: () => request<{ status: string }>('/intelligence/press-releases/run', { method: 'POST' }),
+  listPressReleases: (params?: { vendor_name?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.vendor_name) qs.set('vendor_name', params.vendor_name);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/press-releases?${qs}`);
+  },
+  // Jobs
+  runJobDetector: () => request<{ status: string }>('/intelligence/jobs/run', { method: 'POST' }),
+  listJobs: (params?: { company_name?: string; is_spike?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.company_name) qs.set('company_name', params.company_name);
+    if (params?.is_spike !== undefined) qs.set('is_spike', String(params.is_spike));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/jobs?${qs}`);
+  },
+  // Infrastructure
+  runInfraMonitor: () => request<{ status: string }>('/intelligence/infrastructure/run', { method: 'POST' }),
+  listInfrastructure: (params?: { announcement_type?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.announcement_type) qs.set('announcement_type', params.announcement_type);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/infrastructure?${qs}`);
+  },
+  // Status
+  getStatus: () => request<IntelligenceStatus[]>('/intelligence/status'),
+};
+
+// ── Projects (Intelligence Database) API ──────────────────────────────────
+
+export const projectsApi = {
+  list: (params?: { stage?: string; company?: string; has_mw?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.stage) qs.set('stage', params.stage);
+    if (params?.company) qs.set('company', params.company);
+    if (params?.has_mw !== undefined) qs.set('has_mw', String(params.has_mw));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<InfrastructureProject[]>(`/projects/?${qs}`);
+  },
+  get: (id: number) => request<InfrastructureProject>(`/projects/${id}`),
+  create: (data: Partial<InfrastructureProject>) => request<InfrastructureProject>('/projects/', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<InfrastructureProject>) => request<InfrastructureProject>(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: number) => request<void>(`/projects/${id}`, { method: 'DELETE' }),
+  getStats: () => request<ProjectStats>('/projects/stats/summary'),
+  getMapData: (stage?: string) => {
+    const qs = stage ? `?stage=${stage}` : '';
+    return request<InfrastructureProject[]>(`/projects/geo/map-data${qs}`);
+  },
+  getHeatmap: () => request<HeatmapPoint[]>('/projects/geo/heatmap'),
+  listCompanies: (params?: { category?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set('category', params.category);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<CompanyProfile[]>(`/projects/companies/?${qs}`);
+  },
+  createCompany: (data: Partial<CompanyProfile>) => request<CompanyProfile>('/projects/companies/', { method: 'POST', body: JSON.stringify(data) }),
+  listOpportunities: (params?: { opportunity_type?: string; is_actioned?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.opportunity_type) qs.set('opportunity_type', params.opportunity_type);
+    if (params?.is_actioned !== undefined) qs.set('is_actioned', String(params.is_actioned));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<OpportunitySignal[]>(`/projects/opportunities/?${qs}`);
+  },
+  createOpportunity: (data: Partial<OpportunitySignal>) => request<OpportunitySignal>('/projects/opportunities/', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Processing API ─────────────────────────────────────────────────────────
+
+export const processingApi = {
+  runAll: () => request<{ status: string; results: Record<string, unknown> }>('/processing/run-all', { method: 'POST' }),
+  runParser: () => request<{ status: string; records_processed: number }>('/processing/parse/run', { method: 'POST' }),
+  runEntities: () => request<{ status: string; records_processed: number }>('/processing/entities/run', { method: 'POST' }),
+  runDeduplication: () => request<{ status: string; duplicate_groups: number; duplicates_flagged: number }>('/processing/deduplicate/run', { method: 'POST' }),
+  runScoring: () => request<{ status: string; records_scored: number }>('/processing/score/run', { method: 'POST' }),
+  runClassification: () => request<{ status: string; records_classified: number }>('/processing/classify/run', { method: 'POST' }),
+};
