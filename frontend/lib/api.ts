@@ -44,8 +44,10 @@ export interface TriggerSignal {
   id: number;
   account_id: number;
   signal_type: string;
+  title: string;
   description?: string;
-  source?: string;
+  source_url?: string;
+  status?: string;
   detected_at?: string;
 }
 
@@ -53,11 +55,10 @@ export interface Opportunity {
   id: number;
   account_id: number;
   title: string;
+  description?: string;
   stage: string;
   estimated_value?: number;
-  probability?: number;
-  qualification_score?: number;
-  notes?: string;
+  currency?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -65,17 +66,27 @@ export interface Opportunity {
 export interface Qualification {
   id: number;
   opportunity_id: number;
-  score: number;
-  criteria: Record<string, number>;
-  recommendation?: string;
-  notes?: string;
-  created_at?: string;
+  budget_confidence: number;
+  route_to_market_clarity: number;
+  incumbent_lock_in_risk: number;
+  procurement_timeline_realism: number;
+  technical_fit: number;
+  tier_level?: string;
+  uptime_target?: number;
+  mep_complexity?: string;
+  live_environment: boolean;
+  overall_score: number;
+  go_no_go: 'go' | 'no_go' | 'conditional';
+  rationale?: string;
+  scored_at?: string;
 }
 
 export interface Bid {
   id: number;
   opportunity_id: number;
   title: string;
+  tender_ref?: string;
+  submission_date?: string;
   status: string;
   win_themes?: string;
   notes?: string;
@@ -118,33 +129,32 @@ export interface RFI {
 
 export interface EstimatingProject {
   id: number;
-  bid_id?: number;
-  title: string;
-  project_type?: string;
-  tier?: string;
-  budget?: number;
-  scope_gap_score?: number;
-  notes?: string;
+  bid_id: number;
+  project_type: string;
+  tier_level?: string;
+  total_budget?: number;
+  contingency_pct?: number;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface ScopeGap {
   id: number;
-  estimating_id: number;
+  project_id: number;
   category: string;
-  item: string;
-  status: string;
-  risk_level?: string;
+  description: string;
+  identified: boolean;
+  owner_agreed: boolean;
+  included_in_price: boolean;
   notes?: string;
 }
 
 export interface ChecklistItem {
   id: number;
-  estimating_id: number;
+  project_id: number;
   category: string;
   item: string;
-  checked: boolean;
+  completed: boolean;
   notes?: string;
 }
 
@@ -224,6 +234,19 @@ export const swoopApi = {
     }),
 };
 
+export interface QualificationInput {
+  budget_confidence: number;
+  route_to_market_clarity: number;
+  incumbent_lock_in_risk: number;
+  procurement_timeline_realism: number;
+  technical_fit: number;
+  tier_level?: string;
+  uptime_target?: number;
+  mep_complexity?: string;
+  live_environment?: boolean;
+  rationale?: string;
+}
+
 // ── Opportunities ──────────────────────────────────────────────────────────
 
 export const opportunitiesApi = {
@@ -232,7 +255,7 @@ export const opportunitiesApi = {
   get: (id: number) => request<Opportunity>(`/opportunities/${id}`),
   update: (id: number, data: Partial<Opportunity>) => request<Opportunity>(`/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: number) => request<void>(`/opportunities/${id}`, { method: 'DELETE' }),
-  qualify: (id: number, data: Partial<Qualification>) => request<Qualification>(`/opportunities/${id}/qualify`, { method: 'POST', body: JSON.stringify(data) }),
+  qualify: (id: number, data: QualificationInput) => request<Qualification>(`/opportunities/${id}/qualify`, { method: 'POST', body: JSON.stringify(data) }),
   getQualification: (id: number) => request<Qualification>(`/opportunities/${id}/qualification`),
 };
 
@@ -264,7 +287,7 @@ export const estimatingApi = {
   createScopeGap: (id: number, data: Partial<ScopeGap>) => request<ScopeGap>(`/estimating/${id}/scope-gaps`, { method: 'POST', body: JSON.stringify(data) }),
   listChecklist: (id: number) => request<ChecklistItem[]>(`/estimating/${id}/checklist`),
   createChecklistItem: (id: number, data: Partial<ChecklistItem>) => request<ChecklistItem>(`/estimating/${id}/checklist`, { method: 'POST', body: JSON.stringify(data) }),
-  getScopeGapReport: (id: number) => request<{ score: number; items: ScopeGap[] }>(`/estimating/${id}/scope-gap-report`),
+  getScopeGapReport: (id: number) => request<{ risk_score: number; total_items: number; identified_count: number; not_included_in_price: number }>(`/estimating/${id}/scope-gap-report`),
 };
 
 // ── Intelligence Types ─────────────────────────────────────────────────────

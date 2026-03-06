@@ -5,13 +5,15 @@ import Header from '@/components/layout/Header';
 import WebsiteSwoop from '@/components/WebsiteSwoop';
 import { accountsApi, accountsCsvApi, Account, Contact, TriggerSignal, CsvImportResult } from '@/lib/api';
 
-const ACCOUNT_TYPES = ['All', 'Client', 'Prospect', 'Partner', 'Contractor'];
+const ACCOUNT_TYPES = ['All', 'operator', 'hyperscaler', 'developer', 'colo', 'enterprise'];
 
 const SIGNAL_COLORS: Record<string, string> = {
-  expansion: 'bg-success/20 text-success border-success/30',
-  renewal: 'bg-primary/20 text-primary border-primary/30',
-  pain: 'bg-danger/20 text-danger border-danger/30',
-  tender: 'bg-warning/20 text-warning border-warning/30',
+  planning: 'bg-success/20 text-success border-success/30',
+  framework_award: 'bg-primary/20 text-primary border-primary/30',
+  hiring_spike: 'bg-danger/20 text-danger border-danger/30',
+  grid: 'bg-warning/20 text-warning border-warning/30',
+  land_acquisition: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+  roadworks: 'bg-surface text-text-muted border-border-subtle',
   default: 'bg-surface text-text-muted border-border-subtle',
 };
 
@@ -39,8 +41,9 @@ interface NewContactForm {
 
 interface NewSignalForm {
   signal_type: string;
+  title: string;
   description: string;
-  source: string;
+  source_url: string;
 }
 
 export default function AccountsPage() {
@@ -54,9 +57,9 @@ export default function AccountsPage() {
   const [showNewContact, setShowNewContact] = useState(false);
   const [showNewSignal, setShowNewSignal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [newAccount, setNewAccount] = useState<NewAccountForm>({ name: '', type: 'Client', stage: 'Target', location: '', website: '', logo_url: '', tags: '', notes: '' });
+  const [newAccount, setNewAccount] = useState<NewAccountForm>({ name: '', type: 'operator', stage: 'Target', location: '', website: '', logo_url: '', tags: '', notes: '' });
   const [newContact, setNewContact] = useState<NewContactForm>({ name: '', role: '', email: '', phone: '' });
-  const [newSignal, setNewSignal] = useState<NewSignalForm>({ signal_type: 'expansion', description: '', source: '' });
+  const [newSignal, setNewSignal] = useState<NewSignalForm>({ signal_type: 'planning', title: '', description: '', source_url: '' });
   const [csvImporting, setCsvImporting] = useState(false);
   const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -82,7 +85,7 @@ export default function AccountsPage() {
       const acc = await accountsApi.create(newAccount);
       setAccounts((prev) => [...prev, acc]);
       setShowNewAccount(false);
-      setNewAccount({ name: '', type: 'Client', stage: 'Target', location: '', website: '', logo_url: '', tags: '', notes: '' });
+      setNewAccount({ name: '', type: 'operator', stage: 'Target', location: '', website: '', logo_url: '', tags: '', notes: '' });
     } finally {
       setSaving(false);
     }
@@ -110,7 +113,7 @@ export default function AccountsPage() {
       const s = await accountsApi.createTriggerSignal(selected.id, newSignal);
       setSignals((prev) => [...prev, s]);
       setShowNewSignal(false);
-      setNewSignal({ signal_type: 'expansion', description: '', source: '' });
+      setNewSignal({ signal_type: 'planning', title: '', description: '', source_url: '' });
     } finally {
       setSaving(false);
     }
@@ -362,8 +365,9 @@ export default function AccountsPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`px-2 py-0.5 rounded text-xs font-medium border ${signalColor(s.signal_type)}`}>{s.signal_type}</span>
                       </div>
-                      <p className="text-text-main text-xs">{s.description}</p>
-                      {s.source && <p className="text-text-faint text-xs">Source: {s.source}</p>}
+                      <p className="text-text-main text-xs font-medium">{s.title}</p>
+                      {s.description && <p className="text-text-muted text-xs mt-0.5">{s.description}</p>}
+                      {s.source_url && <p className="text-text-faint text-xs">Source: {s.source_url}</p>}
                     </li>
                   ))}
                 </ul>
@@ -382,7 +386,7 @@ export default function AccountsPage() {
               <input required placeholder="Company name" value={newAccount.name} onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
               <div className="grid grid-cols-2 gap-3">
                 <select value={newAccount.type} onChange={(e) => setNewAccount({ ...newAccount, type: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                  {['Client', 'Prospect', 'Partner', 'Contractor'].map((t) => <option key={t}>{t}</option>)}
+                  {['operator', 'hyperscaler', 'developer', 'colo', 'enterprise'].map((t) => <option key={t}>{t}</option>)}
                 </select>
                 <input placeholder="Stage (e.g. Target)" value={newAccount.stage} onChange={(e) => setNewAccount({ ...newAccount, stage: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
               </div>
@@ -426,10 +430,11 @@ export default function AccountsPage() {
             <h2 className="text-text-main font-semibold text-lg mb-4">Add Trigger Signal</h2>
             <form onSubmit={handleCreateSignal} className="space-y-3">
               <select value={newSignal.signal_type} onChange={(e) => setNewSignal({ ...newSignal, signal_type: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                {['expansion', 'renewal', 'pain', 'tender'].map((t) => <option key={t}>{t}</option>)}
+                {['planning', 'grid', 'land_acquisition', 'hiring_spike', 'framework_award', 'roadworks'].map((t) => <option key={t}>{t}</option>)}
               </select>
-              <textarea required placeholder="Description" value={newSignal.description} onChange={(e) => setNewSignal({ ...newSignal, description: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" />
-              <input placeholder="Source (e.g. LinkedIn, press)" value={newSignal.source} onChange={(e) => setNewSignal({ ...newSignal, source: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              <input required placeholder="Signal title (e.g. £1bn funding round)" value={newSignal.title} onChange={(e) => setNewSignal({ ...newSignal, title: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              <textarea placeholder="Description (optional)" value={newSignal.description} onChange={(e) => setNewSignal({ ...newSignal, description: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" />
+              <input placeholder="Source URL (e.g. https://linkedin.com/...)" value={newSignal.source_url} onChange={(e) => setNewSignal({ ...newSignal, source_url: e.target.value })} className="w-full bg-background border border-border-subtle text-text-main rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowNewSignal(false)} className="px-4 py-2 text-text-main hover:text-text-main text-sm">Cancel</button>
                 <button type="submit" disabled={saving} className="bg-primary hover:bg-primary-dark text-text-main px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">{saving ? 'Saving…' : 'Add Signal'}</button>
