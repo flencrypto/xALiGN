@@ -653,6 +653,211 @@ class ImageIntelWorker:
         )
 
 
+# ── Worker 11: Build Captain ──────────────────────────────────────────────────
+
+_W11_SYSTEM = (
+    "You are Build Captain: product-minded staff engineer. "
+    "Convert user requests into implementable plans for a Next.js + TS + Tailwind app. "
+    "Output: (1) assumptions (max 3), (2) task list in order, (3) file-level plan, "
+    "(4) acceptance criteria, (5) test/verification steps. "
+    "Prefer small PR-sized chunks. When user provides code/screenshots, infer intent "
+    "and propose the cleanest minimal change. "
+    "Ask max 2 questions only if blocking; otherwise proceed with best assumptions. "
+    "Return STRICT JSON. No markdown. No narrative outside JSON fields."
+)
+
+_W11_SCHEMA = {
+    "assumptions": [],
+    "task_list": [],
+    "file_level_plan": [],
+    "acceptance_criteria": [],
+    "verification_steps": [],
+    "confidence": 0.0,
+}
+
+
+class BuildCaptainWorker:
+    """Worker 11: Build Captain – build planning agent (temperature=0.3)."""
+
+    async def run(self, request: str) -> dict[str, Any]:
+        user_content = (
+            f"Build request:\n{request[:6000]}\n\n"
+            f"Return JSON matching this schema:\n{json.dumps(_W11_SCHEMA)}"
+        )
+        return await _call_worker(
+            worker_name="build_captain",
+            system_prompt=_W11_SYSTEM,
+            user_content=user_content,
+            temperature=0.3,
+            top_p=0.95,
+            max_tokens=3000,
+        )
+
+
+# ── Worker 12: UI Surgeon ─────────────────────────────────────────────────────
+
+_W12_SYSTEM = (
+    "You are UI Surgeon: expert UI engineer for Next.js + Tailwind + shadcn. "
+    "Given a screenshot, reference site, or UI description, you output: "
+    "(1) layout anatomy (shell/sections), (2) component inventory, "
+    "(3) Tailwind token suggestions, (4) shadcn components to use, "
+    "(5) responsive rules, (6) exact file structure + build order. "
+    "Provide code skeletons when requested. Keep designs calm, premium, data-first. "
+    "Return STRICT JSON. No markdown. No narrative outside JSON fields."
+)
+
+_W12_SCHEMA = {
+    "layout_anatomy": [],
+    "component_inventory": [],
+    "tailwind_tokens": [],
+    "shadcn_components": [],
+    "responsive_rules": [],
+    "file_structure": [],
+    "build_order": [],
+    "confidence": 0.0,
+}
+
+
+class UiSurgeonWorker:
+    """Worker 12: UI Surgeon – UI analysis and component planning agent (temperature=0.3)."""
+
+    async def run(self, description: str) -> dict[str, Any]:
+        user_content = (
+            f"UI description / reference:\n{description[:6000]}\n\n"
+            f"Return JSON matching this schema:\n{json.dumps(_W12_SCHEMA)}"
+        )
+        return await _call_worker(
+            worker_name="ui_surgeon",
+            system_prompt=_W12_SYSTEM,
+            user_content=user_content,
+            temperature=0.3,
+            top_p=0.95,
+            max_tokens=3000,
+        )
+
+
+# ── Worker 13: Test Pilot ─────────────────────────────────────────────────────
+
+_W13_SYSTEM = (
+    "You are Test Pilot: QA engineer + automation specialist. "
+    "For any feature, produce: (1) risk list, (2) manual test checklist, "
+    "(3) Playwright test plan and scripts, (4) data fixtures needed, "
+    "(5) failure triage steps. "
+    "Optimise for fast, reliable tests. "
+    "Ask for app URL/routes if needed; otherwise write tests using sensible selectors and aria roles. "
+    "Return STRICT JSON. No markdown. No narrative outside JSON fields."
+)
+
+_W13_SCHEMA = {
+    "risk_list": [],
+    "manual_checklist": [],
+    "playwright_test_plan": [],
+    "playwright_scripts": [],
+    "data_fixtures": [],
+    "failure_triage": [],
+    "confidence": 0.0,
+}
+
+
+class TestPilotWorker:
+    """Worker 13: Test Pilot – QA and Playwright automation agent (temperature=0.2)."""
+
+    async def run(self, feature_description: str) -> dict[str, Any]:
+        user_content = (
+            f"Feature to test:\n{feature_description[:6000]}\n\n"
+            f"Return JSON matching this schema:\n{json.dumps(_W13_SCHEMA)}"
+        )
+        return await _call_worker(
+            worker_name="test_pilot",
+            system_prompt=_W13_SYSTEM,
+            user_content=user_content,
+            temperature=0.2,
+            top_p=0.9,
+            max_tokens=3500,
+        )
+
+
+# ── Worker 14: Data Curator ───────────────────────────────────────────────────
+
+_W14_SYSTEM = (
+    "You are Data Curator: product data + backend engineer for pricing/valuation. "
+    "Build schemas and algorithms for: variant match scoring, sold comps selection, "
+    "outlier handling, confidence rating (High/Med/Low). "
+    "Output: (1) data model, (2) scoring rules, (3) required inputs, "
+    "(4) API shapes, (5) validation + logging, (6) quick verification queries. "
+    "Prefer transparent ranges over single numbers. "
+    "Return STRICT JSON. No markdown. No narrative outside JSON fields."
+)
+
+_W14_SCHEMA = {
+    "data_model": [],
+    "scoring_rules": [],
+    "required_inputs": [],
+    "api_shapes": [],
+    "validation_rules": [],
+    "verification_queries": [],
+    "confidence": 0.0,
+}
+
+
+class DataCuratorWorker:
+    """Worker 14: Data Curator – valuation pipeline design agent (temperature=0.15)."""
+
+    async def run(self, context: str) -> dict[str, Any]:
+        user_content = (
+            f"Valuation / data context:\n{context[:6000]}\n\n"
+            f"Return JSON matching this schema:\n{json.dumps(_W14_SCHEMA)}"
+        )
+        return await _call_worker(
+            worker_name="data_curator",
+            system_prompt=_W14_SYSTEM,
+            user_content=user_content,
+            temperature=0.15,
+            top_p=0.85,
+            max_tokens=3000,
+        )
+
+
+# ── Worker 15: Ops Boss ───────────────────────────────────────────────────────
+
+_W15_SYSTEM = (
+    "You are Ops Boss: DevOps for Next.js. "
+    "Output: (1) env var matrix (dev/stage/prod), (2) secrets handling rules, "
+    "(3) CI pipeline steps (lint/typecheck/test/build), (4) caching strategy, "
+    "(5) security basics (no secrets client-side), (6) deploy checklist. "
+    "Keep it minimal and reliable. "
+    "Return STRICT JSON. No markdown. No narrative outside JSON fields."
+)
+
+_W15_SCHEMA = {
+    "env_var_matrix": [],
+    "secrets_handling": [],
+    "ci_pipeline_steps": [],
+    "caching_strategy": [],
+    "security_basics": [],
+    "deploy_checklist": [],
+    "confidence": 0.0,
+}
+
+
+class OpsBossWorker:
+    """Worker 15: Ops Boss – CI/CD and environment configuration agent (temperature=0.15)."""
+
+    async def run(self, context: str) -> dict[str, Any]:
+        user_content = (
+            f"Deployment / CI context:\n{context[:6000]}\n\n"
+            f"Return JSON matching this schema:\n{json.dumps(_W15_SCHEMA)}"
+        )
+        return await _call_worker(
+            worker_name="ops_boss",
+            system_prompt=_W15_SYSTEM,
+            user_content=user_content,
+            temperature=0.15,
+            top_p=0.85,
+            max_tokens=3000,
+        )
+
+
 # ── Backward compatibility aliases ────────────────────────────────────────────
 TenderAnalysisWorker = TenderAwardWorker
 PricingModelWorker = CompetitivePricingWorker

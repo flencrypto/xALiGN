@@ -18,6 +18,7 @@ const navItems = [
   { href: '/lead-times', label: 'Lead Times', icon: '⏱' },
   { href: '/frameworks', label: 'Frameworks', icon: '🏛' },
   { href: '/blog', label: 'News Feed', icon: '✍️' },
+  { href: '/agents', label: 'Agents', icon: '🤖' },
 ];
 
 export default function Sidebar() {

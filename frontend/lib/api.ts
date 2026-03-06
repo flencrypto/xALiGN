@@ -929,3 +929,50 @@ export const processingApi = {
   runScoring: () => request<{ status: string; records_scored: number }>('/processing/score/run', { method: 'POST' }),
   runClassification: () => request<{ status: string; records_classified: number }>('/processing/classify/run', { method: 'POST' }),
 };
+
+// ── Agents API ─────────────────────────────────────────────────────────────
+
+export interface AgentCatalogueEntry {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  endpoint: string;
+  input_field: string;
+  placeholder: string;
+}
+
+export interface AgentResult {
+  status: string;
+  agent: string;
+  result: Record<string, unknown>;
+}
+
+export const agentsApi = {
+  catalogue: () => request<{ agents: AgentCatalogueEntry[] }>('/agents/catalogue'),
+  runBuildCaptain: (requestText: string) =>
+    request<AgentResult>('/agents/build-captain', {
+      method: 'POST',
+      body: JSON.stringify({ request: requestText }),
+    }),
+  runUiSurgeon: (description: string) =>
+    request<AgentResult>('/agents/ui-surgeon', {
+      method: 'POST',
+      body: JSON.stringify({ description }),
+    }),
+  runTestPilot: (feature_description: string) =>
+    request<AgentResult>('/agents/test-pilot', {
+      method: 'POST',
+      body: JSON.stringify({ feature_description }),
+    }),
+  runDataCurator: (context: string) =>
+    request<AgentResult>('/agents/data-curator', {
+      method: 'POST',
+      body: JSON.stringify({ context }),
+    }),
+  runOpsBoss: (context: string) =>
+    request<AgentResult>('/agents/ops-boss', {
+      method: 'POST',
+      body: JSON.stringify({ context }),
+    }),
+};
