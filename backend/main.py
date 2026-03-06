@@ -31,6 +31,7 @@ from backend.routers.tender import router as tender_router
 from backend.routers.uploads import router as uploads_router
 from backend.routers.calls import router as calls_router
 from backend.routers.crm import router as crm_router
+from backend.routers.infrastructure import router as infrastructure_router
 from backend.seed_data import run_seed
 from backend.core.config import settings
 
@@ -126,6 +127,7 @@ app.include_router(calls_router, prefix="/api/v1")
 app.include_router(crm_router, prefix="/api/v1")
 app.include_router(leadtime_router, prefix="/api/v1")
 app.include_router(frameworks_router, prefix="/api/v1")
+app.include_router(infrastructure_router, prefix="/api/v1")
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────

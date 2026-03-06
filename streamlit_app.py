@@ -128,16 +128,17 @@ st.sidebar.markdown(
 )
 
 PAGES = {
-    "🏠  Dashboard":      "dashboard",
-    "🏢  Accounts":       "accounts",
-    "🎯  Opportunities":  "opportunities",
-    "📋  Bids":           "bids",
-    "📐  Estimating":     "estimating",
-    "🔍  Intelligence":   "intelligence",
-    "📑  Tenders":        "tenders",
-    "📞  Calls":          "calls",
-    "⏱  Lead Times":     "lead_times",
-    "🏛  Frameworks":     "frameworks",
+    "🏠  Dashboard":           "dashboard",
+    "🏢  Accounts":            "accounts",
+    "🎯  Opportunities":       "opportunities",
+    "📋  Bids":                "bids",
+    "📐  Estimating":          "estimating",
+    "🔍  Intelligence":        "intelligence",
+    "📑  Tenders":             "tenders",
+    "📞  Calls":               "calls",
+    "⏱  Lead Times":          "lead_times",
+    "🏛  Frameworks":          "frameworks",
+    "🌐  Data Centre Radar":   "infrastructure",
 }
 
 page_label = st.sidebar.radio("Navigate", list(PAGES.keys()), label_visibility="collapsed")
@@ -1364,21 +1365,307 @@ def page_frameworks() -> None:
                         st.rerun()
 
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Page: Data Centre Radar (Infrastructure Intelligence)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def page_infrastructure() -> None:
+    st.title("🌐 Data Centre Radar")
+    st.caption("Global infrastructure intelligence — AI-powered project tracking")
+
+    # ── Tabs ──────────────────────────────────────────────────────────────────
+    tab_projects, tab_leaderboard, tab_signals, tab_contractors, tab_momentum, tab_import = st.tabs([
+        "📍 Projects",
+        "🏆 Expansion Leaderboard",
+        "📡 Opportunity Radar",
+        "🔧 Contractor Activity",
+        "📊 Momentum Score",
+        "➕ Import / Add",
+    ])
+
+    # ── Projects ──────────────────────────────────────────────────────────────
+    with tab_projects:
+        st.markdown("#### Infrastructure Projects")
+
+        col_f1, col_f2, col_f3 = st.columns(3)
+        stage_filter   = col_f1.selectbox(
+            "Stage", ["All", "announced", "planning", "permitted", "construction", "operational", "cancelled"],
+            key="inf_stage",
+        )
+        segment_filter = col_f2.selectbox(
+            "Segment", ["All", "hyperscaler", "colocation", "sovereign_ai", "enterprise", "edge", "other"],
+            key="inf_seg",
+        )
+        region_filter  = col_f3.text_input("Region contains", key="inf_region")
+
+        params: dict = {}
+        if stage_filter != "All":
+            params["stage"] = stage_filter
+        if segment_filter != "All":
+            params["industry_segment"] = segment_filter
+        if region_filter:
+            params["region"] = region_filter
+
+        projects = _get("/intelligence/projects", params=params) or []
+
+        if projects:
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Total Projects", len(projects))
+            total_mw = sum(p.get("capacity_mw") or 0 for p in projects)
+            col2.metric("Total MW Tracked", f"{total_mw:,.0f} MW")
+            total_inv = sum(p.get("investment_value") or 0 for p in projects)
+            col3.metric("Total Investment", f"${total_inv / 1e9:,.1f}B" if total_inv >= 1e9 else f"${total_inv / 1e6:,.0f}M" if total_inv else "—")
+            planning_count = sum(1 for p in projects if p.get("project_stage") in ("planning", "announced"))
+            col4.metric("In Planning / Announced", planning_count)
+            st.divider()
+
+        if not projects:
+            st.info("No projects found. Adjust filters or import data via the **Import / Add** tab.")
+        else:
+            df = pd.DataFrame(
+                [
+                    {
+                        "Company":    p.get("company"),
+                        "Project":    p.get("project_name"),
+                        "City":       p.get("location_city") or "—",
+                        "Country":    p.get("location_country") or "—",
+                        "Region":     p.get("region") or "—",
+                        "Segment":    p.get("industry_segment", "—"),
+                        "Stage":      p.get("project_stage", "—"),
+                        "MW":         p.get("capacity_mw"),
+                        "Investment": f"${p['investment_value'] / 1e9:.1f}B" if p.get("investment_value") and p["investment_value"] >= 1e9 else (f"${p['investment_value'] / 1e6:.0f}M" if p.get("investment_value") else "—"),
+                        "Confidence": p.get("confidence_level", "—"),
+                        "Announced":  _fmt_date(str(p["date_announced"])) if p.get("date_announced") else "—",
+                        "Source":     p.get("source") or "—",
+                    }
+                    for p in projects
+                ]
+            )
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.caption(f"{len(projects)} project(s)")
+
+        # ── Project detail ────────────────────────────────────────────────────
+        if projects:
+            st.divider()
+            choices = {
+                f"[{p['id']}] {p['company']} – {p['project_name']}": p["id"]
+                for p in projects
+            }
+            sel = st.selectbox("View project detail + signals", ["— select —"] + list(choices.keys()), key="inf_detail")
+            if sel != "— select —":
+                proj = _get(f"/intelligence/projects/{choices[sel]}")
+                if proj:
+                    c1, c2, c3 = st.columns(3)
+                    c1.markdown(f"**Company:** {proj.get('company')}")
+                    c1.markdown(f"**Stage:** {proj.get('project_stage')}")
+                    c1.markdown(f"**Segment:** {proj.get('industry_segment')}")
+                    c2.markdown(f"**Location:** {proj.get('location_city') or ''}, {proj.get('location_country') or ''}")
+                    c2.markdown(f"**Region:** {proj.get('region') or '—'}")
+                    c2.markdown(f"**Capacity:** {proj.get('capacity_mw') or '—'} MW")
+                    c3.markdown(f"**Investment:** {proj.get('investment_value') or '—'}")
+                    c3.markdown(f"**Source:** {proj.get('source') or '—'}")
+                    c3.markdown(f"**Confidence:** {proj.get('confidence_level')}")
+
+                    partners = proj.get("partners") or []
+                    if partners:
+                        st.markdown(f"**Partners / Contractors:** {', '.join(partners)}")
+
+                    if proj.get("summary"):
+                        st.info(proj["summary"])
+
+                    signals = proj.get("opportunity_signals") or []
+                    if signals:
+                        st.markdown("**Opportunity Signals:**")
+                        for sig in signals:
+                            badge = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(sig.get("likelihood", ""), "⚪")
+                            with st.container(border=True):
+                                st.markdown(f"{badge} **{sig.get('signal_type', '').upper()}** — {sig.get('description') or '—'}")
+                                if sig.get("recommended_action"):
+                                    st.caption(f"💡 {sig['recommended_action']}")
+
+    # ── Expansion Leaderboard ─────────────────────────────────────────────────
+    with tab_leaderboard:
+        st.markdown("#### Expansion Leaderboard")
+        st.caption("Companies ranked by MW under active development")
+        leaderboard = _get("/intelligence/leaderboard") or []
+        if not leaderboard:
+            st.info("No data yet. Import projects to populate the leaderboard.")
+        else:
+            df_lb = pd.DataFrame(
+                [
+                    {
+                        "Rank":        i + 1,
+                        "Company":     e.get("company"),
+                        "Projects":    e.get("project_count"),
+                        "MW (Dev.)":   f"{e['total_mw']:,.0f}" if e.get("total_mw") else "—",
+                        "Investment":  f"${e['total_investment'] / 1e9:.1f}B" if e.get("total_investment") and e["total_investment"] >= 1e9 else (f"${e['total_investment'] / 1e6:.0f}M" if e.get("total_investment") else "—"),
+                    }
+                    for i, e in enumerate(leaderboard)
+                ]
+            )
+            st.dataframe(df_lb, use_container_width=True, hide_index=True)
+
+    # ── Opportunity Radar ─────────────────────────────────────────────────────
+    with tab_signals:
+        st.markdown("#### Opportunity Radar")
+        st.caption("Early-stage BD signals sorted by likelihood")
+
+        col_s1, col_s2 = st.columns(2)
+        likelihood_f = col_s1.selectbox("Likelihood", ["All", "high", "medium", "low"], key="sig_lik")
+        type_f       = col_s2.selectbox("Signal Type", ["All", "planning", "tender", "land", "power", "other"], key="sig_type")
+
+        sig_params: dict = {}
+        if likelihood_f != "All":
+            sig_params["likelihood"] = likelihood_f
+        if type_f != "All":
+            sig_params["signal_type"] = type_f
+
+        signals = _get("/intelligence/signals", params=sig_params) or []
+        if not signals:
+            st.info("No signals yet. Signals are auto-generated or can be added manually.")
+        else:
+            for sig in signals:
+                badge = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(sig.get("likelihood", ""), "⚪")
+                with st.container(border=True):
+                    cols = st.columns([1, 4])
+                    cols[0].markdown(f"**{badge} {sig.get('likelihood', '').upper()}**")
+                    cols[0].caption(sig.get("signal_type", ""))
+                    cols[1].markdown(f"**Project ID {sig.get('project_id')}** — {sig.get('description') or '—'}")
+                    if sig.get("recommended_action"):
+                        cols[1].caption(f"💡 Recommended: {sig['recommended_action']}")
+
+    # ── Contractor Activity ───────────────────────────────────────────────────
+    with tab_contractors:
+        st.markdown("#### Contractor Activity Tracker")
+        st.caption("Frequency of contractor / partner appearances across projects — key for sales intelligence")
+        contractors = _get("/intelligence/contractor-activity") or []
+        if not contractors:
+            st.info("No contractor data yet. Contractors are derived from project partner fields.")
+        else:
+            df_c = pd.DataFrame(
+                [
+                    {"Contractor": c.get("contractor"), "Projects": c.get("project_count")}
+                    for c in contractors
+                ]
+            )
+            st.dataframe(df_c, use_container_width=True, hide_index=True)
+            st.bar_chart(df_c.set_index("Contractor")["Projects"])
+
+    # ── Momentum Score ────────────────────────────────────────────────────────
+    with tab_momentum:
+        st.markdown("#### Infrastructure Momentum Score")
+        st.caption("Composite score per region — identifies fastest-growing markets (0–10 scale)")
+        momentum = _get("/intelligence/momentum") or []
+        if not momentum:
+            st.info("No momentum data yet. Scores are computed from project data per region.")
+        else:
+            df_m = pd.DataFrame(
+                [
+                    {
+                        "Region":      m.get("region"),
+                        "Score":       m.get("score"),
+                        "Projects":    m.get("project_count"),
+                        "Total MW":    f"{m['total_mw']:,.0f}" if m.get("total_mw") else "—",
+                        "Investment":  f"${m['total_investment'] / 1e9:.1f}B" if m.get("total_investment") and m["total_investment"] >= 1e9 else (f"${m['total_investment'] / 1e6:.0f}M" if m.get("total_investment") else "—"),
+                    }
+                    for m in momentum
+                ]
+            )
+            st.dataframe(df_m, use_container_width=True, hide_index=True)
+            st.bar_chart(df_m.set_index("Region")["Score"])
+
+    # ── Import / Add ──────────────────────────────────────────────────────────
+    with tab_import:
+        st.markdown("#### Import Project (Webhook / Manual Entry)")
+        st.caption("Accepts the same payload as `POST /api/v1/intelligence/import`")
+
+        with st.form("inf_import"):
+            col1, col2 = st.columns(2)
+            company      = col1.text_input("Company *", placeholder="Microsoft")
+            project_name = col2.text_input("Project Name *", placeholder="Wisconsin AI Campus")
+            city         = col1.text_input("City", placeholder="Wisconsin")
+            country      = col2.text_input("Country", placeholder="USA")
+            region       = col1.text_input("Region", placeholder="North America")
+            project_type = col2.text_input("Project Type", placeholder="Hyperscale Expansion")
+            segment      = col1.selectbox("Industry Segment", ["other", "hyperscaler", "colocation", "sovereign_ai", "enterprise", "edge"])
+            stage        = col2.selectbox("Stage", ["announced", "planning", "permitted", "construction", "operational", "cancelled"])
+            capacity_mw  = col1.number_input("Capacity (MW)", min_value=0.0, value=0.0, step=10.0)
+            investment   = col2.number_input("Investment Value (USD)", min_value=0.0, value=0.0, step=1_000_000.0)
+            partners_raw = st.text_input("Partners / Contractors (comma-separated)", placeholder="AECOM, Schneider Electric")
+            source       = col1.text_input("Source", placeholder="Reuters")
+            confidence   = col2.selectbox("Confidence", ["medium", "high", "low"])
+            summary      = st.text_area("Summary", placeholder="Project description and context")
+            date_ann     = st.date_input("Date Announced", value=None)
+
+            if st.form_submit_button("Import Project", type="primary"):
+                if not company or not project_name:
+                    st.warning("Company and Project Name are required.")
+                else:
+                    partners_list = [p.strip() for p in partners_raw.split(",") if p.strip()] if partners_raw else []
+                    payload: dict = {
+                        "company":          company,
+                        "project_name":     project_name,
+                        "location_city":    city   or None,
+                        "location_country": country or None,
+                        "region":           region  or None,
+                        "project_type":     project_type or None,
+                        "industry_segment": segment,
+                        "project_stage":    stage,
+                        "capacity_mw":      capacity_mw  if capacity_mw  else None,
+                        "investment_value": investment   if investment   else None,
+                        "partners":         partners_list,
+                        "source":           source      or None,
+                        "confidence_level": confidence,
+                        "summary":          summary     or None,
+                        "date_announced":   date_ann.isoformat() if date_ann else None,
+                    }
+                    result = _post("/intelligence/import", payload)
+                    if result:
+                        st.success(f"✅ Project imported (ID {result['id']}): **{result['project_name']}**")
+                        st.rerun()
+
+        st.divider()
+        st.markdown("##### Webhook Payload Example")
+        st.code(
+            """{
+  "company": "Microsoft",
+  "project_name": "Wisconsin AI Campus",
+  "location_city": "Wisconsin",
+  "location_country": "USA",
+  "region": "North America",
+  "project_type": "Hyperscale Expansion",
+  "industry_segment": "hyperscaler",
+  "capacity_mw": 200,
+  "investment_value": 3300000000,
+  "project_stage": "planning",
+  "partners": ["AECOM", "Schneider Electric"],
+  "source": "Reuters",
+  "confidence_level": "high",
+  "summary": "Expansion tied to AI compute demand"
+}""",
+            language="json",
+        )
+        st.caption(f"Endpoint: `POST {API_URL}/intelligence/import`")
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Router
 # ══════════════════════════════════════════════════════════════════════════════
 
 _PAGE_HANDLERS = {
-    "dashboard":    page_dashboard,
-    "accounts":     page_accounts,
-    "opportunities": page_opportunities,
-    "bids":         page_bids,
-    "estimating":   page_estimating,
-    "intelligence": page_intelligence,
-    "tenders":      page_tenders,
-    "calls":        page_calls,
-    "lead_times":   page_lead_times,
-    "frameworks":   page_frameworks,
+    "dashboard":      page_dashboard,
+    "accounts":       page_accounts,
+    "opportunities":  page_opportunities,
+    "bids":           page_bids,
+    "estimating":     page_estimating,
+    "intelligence":   page_intelligence,
+    "tenders":        page_tenders,
+    "calls":          page_calls,
+    "lead_times":     page_lead_times,
+    "frameworks":     page_frameworks,
+    "infrastructure": page_infrastructure,
 }
 
 _PAGE_HANDLERS[page]()
