@@ -1,0 +1,216 @@
+Core Intelligence Tools needed in xAlign
+
+Daily News Intelligence Aggregator
+Pulls in daily news on data centres, hyperscalers, suppliers, builders, energy, chips, stocks.
+
+Project & Expansion Tracker
+Tracks new campuses, expansions, MW, capex, project stage, region.
+
+Tender & Opportunity Hunter
+Finds tenders, planning notices, land deals, contractor awards, procurement signals.
+
+Structured Intelligence Parser
+Converts messy articles into clean database records.
+
+Deduplication & Project Merge Engine
+Detects when multiple stories are the same project and updates instead of duplicating.
+
+Source Confidence Scorer
+Scores source reliability and flags weak or speculative stories.
+
+Entity Extraction Engine
+Pulls out companies, locations, contractors, MW, investment size, dates, partners.
+
+Article Generator
+Turns each story into a clean article or internal briefing.
+
+Executive Summary Generator
+Creates daily overview reports from all collected intelligence.
+
+Mapping & Visualisation Tools
+
+Global Hyperscale Expansion Map
+Interactive world map of projects and expansion signals.
+
+Regional Heatmap Engine
+Shows hotspots by capacity, project count, investment, and activity.
+
+Timeline Playback Tool
+Lets you scrub through months/years to see expansion over time.
+
+Project Stage Visualiser
+Planning / approved / under construction / operational views.
+
+Capacity Dashboard
+Totals MW by company, region, project type, status.
+
+Capex Tracker Dashboard
+Tracks investment values across regions and operators.
+
+BD & Sales Intelligence Tools
+
+BD Opportunity Agent
+Suggests who to contact based on detected projects.
+
+Target Company Recommender
+Ranks likely consultants, contractors, suppliers, operators to approach.
+
+Suggested Next Action Engine
+Recommends outreach, follow-up, monitoring, coffee meeting, warm intro, etc.
+
+Opportunity Scoring Engine
+Scores each signal/project by commercial attractiveness.
+
+Account Prioritisation Dashboard
+Shows highest-value companies to chase first.
+
+Relationship Heat Map
+Shows which companies appear together most often.
+
+Contractor Momentum Tracker
+Tracks which contractors are appearing most in recent projects.
+
+Supplier Momentum Tracker
+Tracks which vendors are winning most placements.
+
+Hyperscaler Ecosystem Mapper
+Maps common partners around AWS, Microsoft, Google, Meta, etc.
+
+Regional Partner Network Viewer
+Shows who dominates in each region.
+
+Predictive / AI Tools
+
+Hyperscale Build Prediction Engine
+Predicts likely next build regions.
+
+Signal Correlation Engine
+Finds hidden patterns across projects, suppliers, contractors, and operators.
+
+Company Influence Score Model
+Ranks companies by ecosystem importance.
+
+Region Momentum Score Model
+Ranks regions by likely future activity.
+
+Project Likelihood Scorer
+Estimates whether weak signals are likely to become real projects.
+
+Emerging Trend Detector
+Spots themes like liquid cooling, sovereign AI, grid strain, GPU clusters.
+
+What Changed Today Engine
+Summarises changes from the previous day automatically.
+
+Developing Major Project Detector
+Flags projects that keep appearing across multiple days.
+
+Anomaly Detector
+Spots unusual stock moves, sudden cluster growth, surprise regions, repeated contractor wins.
+
+Financial / Market Tools
+
+Stock Signal Monitor
+Tracks listed operators, REITs, chipmakers, infrastructure suppliers.
+
+Earnings & Capex Monitor
+Pulls capex clues from earnings reports and filings.
+
+Funding Round Tracker
+Tracks private capital raises and infrastructure funding news.
+
+M&A Monitor
+Tracks acquisitions, mergers, JV partnerships, strategic investments.
+
+REIT Performance Dashboard
+Tracks data-centre REITs and linked infrastructure plays.
+
+Market Impact Explainer
+Explains why a stock or financial development matters commercially.
+
+Workflow / Internal Ops Tools
+
+Daily Task Orchestrator
+Runs all collection and analysis jobs on schedule.
+
+Prompt Management Console
+Lets you manage Grok/LLM prompts in one place.
+
+Manual Review Queue
+Lets you approve, reject, or edit extracted intelligence.
+
+Alert Engine
+Sends alerts for major projects, new tenders, high-MW builds, new regions.
+
+Watchlist Manager
+Lets you follow specific companies, regions, project types, technologies.
+
+Saved Searches Tool
+Store reusable intelligence filters.
+
+Internal Notes Layer
+Add your own BD notes against projects and companies.
+
+CRM Sync Tool
+Push opportunities into HubSpot, Pipedrive, Salesforce, etc.
+
+Email Briefing Generator
+Turns the daily intelligence into a nice internal email.
+
+PDF / Board Report Exporter
+Exports weekly or monthly summaries for management or investors.
+
+Search / Discovery Tools
+
+Planning Portal Scraper
+Watches planning applications and approvals.
+
+Government Infrastructure Notice Monitor
+Tracks public digital infrastructure announcements.
+
+Utility & Grid Expansion Tracker
+Watches substations, transmission, power availability, renewable deals.
+
+Land Acquisition Monitor
+Tracks strategic land buys linked to likely data-centre growth.
+
+Submarine Cable & Fibre Monitor
+Tracks fibre backbones, cable landings, IXP expansion.
+
+Mission-Critical Construction Feed
+Watches specialist construction news and contractor announcements.
+
+Job Posting Signal Tool
+Uses hiring patterns to detect regional expansion before official announcements.
+
+Vendor Press Release Harvester
+Pulls supplier-side announcements that hint at hidden projects.
+
+UX / Product Tools
+
+Command Centre Dashboard
+One-screen overview of market, projects, opportunities, alerts, predictions.
+
+Company Intelligence Page
+Deep profile for each company.
+
+Project Intelligence Page
+Deep profile for each project/campus.
+
+Region Intelligence Page
+Deep profile for each country/city/market.
+
+Compare Tool
+Compare companies, regions, suppliers, or project pipelines side by side.
+
+Natural Language Search
+Search like: “show all Microsoft projects over 100MW in Europe”.
+
+Ask aLign Chat Agent
+Conversational interface over your intelligence database.
+
+Custom Report Builder
+Users choose filters and generate tailored reports.
+
+Role-Based Views
+Different dashboards for sales, strategy, investor, ops, leadership.
