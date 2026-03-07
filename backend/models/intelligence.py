@@ -9,6 +9,26 @@ from sqlalchemy.orm import Mapped, mapped_column
 from backend.database import Base
 
 
+class DailyBriefing(Base):
+    """Stores the full raw text of a daily intelligence briefing for auditability."""
+
+    __tablename__ = "daily_briefings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    briefing_type: Mapped[str] = mapped_column(
+        String(100), default="daily_intelligence_briefing", server_default="daily_intelligence_briefing"
+    )
+    full_text: Mapped[str] = mapped_column(Text, nullable=False)
+    briefing_date: Mapped[str | None] = mapped_column(String(50))  # ISO date string
+    accounts_updated: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    opportunities_created: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    trigger_signals_created: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), server_default=func.now()
+    )
+
+
 class NewsArticleCategory(str, enum.Enum):
     data_centre = "data_centre"
     hyperscaler = "hyperscaler"

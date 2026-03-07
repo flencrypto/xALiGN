@@ -30,6 +30,12 @@ class SignalType(str, enum.Enum):
     hiring_spike = "hiring_spike"
     framework_award = "framework_award"
     roadworks = "roadworks"
+    new_build = "new_build"
+    expansion = "expansion"
+    cancellation = "cancellation"
+    acquisition = "acquisition"
+    energy_deal = "energy_deal"
+    supply_chain_risk = "supply_chain_risk"
 
 
 class SignalStatus(str, enum.Enum):

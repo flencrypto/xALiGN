@@ -1,6 +1,7 @@
 """Intelligence Collection Layer router.
 
 Endpoints:
+  POST /api/v1/intelligence/briefing              – Ingest daily intelligence briefing
   POST /api/v1/intelligence/news/run               – Trigger news aggregator
   GET  /api/v1/intelligence/news                   – List news articles
   POST /api/v1/intelligence/planning/run           – Trigger planning scraper
@@ -17,7 +18,7 @@ Endpoints:
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -28,6 +29,8 @@ from backend.models.intelligence import (
     PlanningApplication,
     VendorPressRelease,
 )
+from backend.schemas.intelligence import BriefingIngestRequest, BriefingIngestResponse
+from backend.services.briefing_parser import parse_and_upsert
 from backend.services.infra_monitor import (
     get_infrastructure_announcements,
     run_infra_monitor,
@@ -49,6 +52,75 @@ from backend.services.press_release_harvester import (
 logger = logging.getLogger("align.intelligence")
 
 router = APIRouter(prefix="/intelligence", tags=["Intelligence Collection"])
+
+
+# ── Daily Briefing Ingestion ───────────────────────────────────────────────────
+
+@router.post(
+    "/briefing",
+    response_model=BriefingIngestResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Ingest a daily intelligence briefing",
+)
+async def ingest_briefing(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> BriefingIngestResponse:
+    """Ingest a daily GLOBAL DATA CENTRE INTELLIGENCE BRIEFING.
+
+    Accepts either:
+    - JSON body: ``{"briefing_text": "..."}``
+    - Multipart file upload (``file`` field, text/markdown)
+    - Multipart form field ``briefing_text``
+    """
+    text: Optional[str] = None
+    content_type = request.headers.get("content-type", "")
+
+    if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
+        try:
+            form = await request.form()
+            form_text = form.get("briefing_text")
+            if form_text:
+                text = str(form_text)
+            else:
+                upload = form.get("file")
+                if upload and hasattr(upload, "read"):
+                    raw = await upload.read()
+                    text = raw.decode("utf-8", errors="replace")
+        except Exception as exc:
+            logger.error("Failed to parse multipart form: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Could not parse form data: {exc}",
+            )
+    else:
+        try:
+            body = await request.json()
+            req = BriefingIngestRequest(**body)
+            text = req.briefing_text
+        except Exception as exc:
+            logger.error("Failed to parse JSON briefing body: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid JSON body: {exc}",
+            )
+
+    if not text or not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No briefing text provided. Supply a JSON body, a form field, or a file upload.",
+        )
+
+    try:
+        result = parse_and_upsert(db, text)
+    except Exception as exc:
+        logger.error("Briefing ingestion failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Briefing ingestion error: {exc}",
+        )
+
+    return BriefingIngestResponse(**result)
 
 
 # ── News ──────────────────────────────────────────────────────────────────────

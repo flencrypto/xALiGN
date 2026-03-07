@@ -8,6 +8,7 @@ from backend.models.framework import ProcurementFramework
 from backend.models.intel import BlogPost, CompanyIntel, ExecutiveProfile, NewsItem, UploadedPhoto
 from backend.models.projects import CompanyProfile, InfrastructureProject, OpportunitySignal
 from backend.models.intelligence import (
+    DailyBriefing,
     InfrastructureAnnouncement,
     JobPostingSignal,
     NewsArticle,
@@ -49,4 +50,5 @@ __all__ = [
     "InfrastructureProject",
     "CompanyProfile",
     "OpportunitySignal",
+    "DailyBriefing",
 ]
