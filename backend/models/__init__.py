@@ -5,7 +5,7 @@ from backend.models.bid import Bid, BidDocument, ComplianceItem, RFI
 from backend.models.debrief import BidDebrief
 from backend.models.estimating import ChecklistItem, EstimatingProject, ScopeGapItem
 from backend.models.framework import ProcurementFramework
-from backend.models.intel import BlogPost, CompanyIntel, ExecutiveProfile, NewsItem, UploadedPhoto
+from backend.models.intel import BlogPost, CompanyIntel, ExecutiveProfile, NewsItem, SignalEvent, UploadedPhoto
 from backend.models.projects import CompanyProfile, InfrastructureProject, OpportunitySignal
 from backend.models.intelligence import (
     DailyBriefing,
@@ -53,4 +53,5 @@ __all__ = [
     "UserSettings",
     "OpportunitySignal",
     "DailyBriefing",
+    "SignalEvent",
 ]

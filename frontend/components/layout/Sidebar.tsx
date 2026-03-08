@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   Menu,
   X,
+  Radio,
 } from 'lucide-react';
 
 const navGroups = [
@@ -41,6 +42,7 @@ const navGroups = [
       { href: '/intel', label: 'Intelligence', Icon: Search },
       { href: '/intelligence', label: 'Market Intel', Icon: Globe },
       { href: '/tenders', label: 'Tenders', Icon: FileText },
+      { href: '/signals', label: 'Signals 📡', Icon: Radio },
     ],
   },
   {

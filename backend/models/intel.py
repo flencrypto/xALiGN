@@ -3,7 +3,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
@@ -25,6 +25,25 @@ class NewsCategory(str, enum.Enum):
     hiring = "hiring"
     funding = "funding"
     general = "general"
+
+
+class SignalEventType(str, enum.Enum):
+    contract_win = "contract_win"
+    expansion = "expansion"
+    funding_round = "funding_round"
+    new_role = "new_role"
+    hiring_spike = "hiring_spike"
+    executive_post = "executive_post"
+    conference = "conference"
+    charity_event = "charity_event"
+    framework_award = "framework_award"
+    planning_notice = "planning_notice"
+    general = "general"
+
+
+class SignalEventStatus(str, enum.Enum):
+    active = "active"
+    archived = "archived"
 
 
 # ── Company Intelligence ──────────────────────────────────────────────────────
@@ -175,5 +194,33 @@ class UploadedPhoto(Base):
         Integer, ForeignKey("bids.id", ondelete="SET NULL"), nullable=True
     )
     uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), server_default=func.now()
+    )
+
+
+# ── Signal Events ─────────────────────────────────────────────────────────────
+
+class SignalEvent(Base):
+    """A tracked commercial or relationship signal event for a company."""
+
+    __tablename__ = "signal_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    company_name: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    account_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    event_type: Mapped[SignalEventType] = mapped_column(
+        Enum(SignalEventType), default=SignalEventType.general, server_default="general"
+    )
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    source_url: Mapped[str | None] = mapped_column(String(2048))
+    relevance_score: Mapped[float | None] = mapped_column(Float)
+    status: Mapped[SignalEventStatus] = mapped_column(
+        Enum(SignalEventStatus), default=SignalEventStatus.active, server_default="active"
+    )
+    event_date: Mapped[datetime | None] = mapped_column(DateTime)
+    detected_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )

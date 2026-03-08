@@ -1021,3 +1021,54 @@ export interface SetupStatus {
 export const setupApi = {
   getStatus: () => request<SetupStatus>('/setup/status'),
 };
+
+// ── Signal Events API ──────────────────────────────────────────────────────
+
+export interface SignalEvent {
+  id: number;
+  company_name: string;
+  account_id?: number;
+  event_type: string;
+  title: string;
+  description?: string;
+  source_url?: string;
+  relevance_score?: number;
+  status: string;
+  event_date?: string;
+  detected_at: string;
+}
+
+export interface ExpansionScoreRequest {
+  signal_events?: string[];
+  days_since_events?: number[];
+  hiring_count?: number;
+  new_office_openings?: number;
+  recent_acquisitions?: number;
+}
+
+export interface ExpansionScoreResult {
+  expansion_activity_score: number;
+  breakdown: Record<string, number>;
+}
+
+export const signalsApi = {
+  list: (params?: { company_name?: string; account_id?: number; event_type?: string; status?: string; skip?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.company_name) qs.set('company_name', params.company_name);
+    if (params?.account_id !== undefined) qs.set('account_id', String(params.account_id));
+    if (params?.event_type) qs.set('event_type', params.event_type);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.skip !== undefined) qs.set('skip', String(params.skip));
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+    return request<SignalEvent[]>(`/signals?${qs}`);
+  },
+  get: (id: number) => request<SignalEvent>(`/signals/${id}`),
+  create: (data: Partial<SignalEvent>) =>
+    request<SignalEvent>('/signals', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<SignalEvent>) =>
+    request<SignalEvent>(`/signals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    request<void>(`/signals/${id}`, { method: 'DELETE' }),
+  computeExpansionScore: (data: ExpansionScoreRequest) =>
+    request<ExpansionScoreResult>('/signals/score/expansion', { method: 'POST', body: JSON.stringify(data) }),
+};

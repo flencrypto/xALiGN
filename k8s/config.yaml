@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: align-config
+data:
+  CORS_ORIGINS: "http://localhost:3000,https://align.example.com"
+  NEXT_PUBLIC_API_URL: "https://align.example.com/api/v1"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: align-secrets
+type: Opaque
+stringData:
+  DATABASE_URL: "sqlite:///./align.db"
+  GROK_API_KEY: "change-me"
