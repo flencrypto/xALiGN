@@ -5,6 +5,8 @@ REM This script helps users generate Gmail OAuth tokens for aLiGN
 setlocal enabledelayedexpansion
 
 cd /d "%~dp0"
+set "CLIENT_SECRET_PATH=%~dp0client_secret.json"
+set "CLIENT_SECRET_FOUND="
 
 echo ========================================================================
 echo  aLiGN - Gmail OAuth Setup Wizard
@@ -23,7 +25,7 @@ echo.
 REM Check if Python is available
 where python >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo ❌ ERROR: Python is not installed or not on PATH
+    echo [ERROR] Python is not installed or not on PATH
     echo.
     echo aLiGN requires Python 3.11+ for backend services.
     echo.
@@ -34,14 +36,23 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo ✅ Python found
+echo [OK] Python found
 python --version
 echo.
 
-REM Check if client_secret.json exists
-if not exist "client_secret.json" (
+REM Check if client_secret.json exists (robust checks for script dir and cwd)
+if exist "%~dp0client_secret.json" set "CLIENT_SECRET_FOUND=%~dp0client_secret.json"
+if not defined CLIENT_SECRET_FOUND if exist ".\client_secret.json" set "CLIENT_SECRET_FOUND=%CD%\client_secret.json"
+if not defined CLIENT_SECRET_FOUND if exist "%CD%\client_secret.json" set "CLIENT_SECRET_FOUND=%CD%\client_secret.json"
+
+if not defined CLIENT_SECRET_FOUND (
     echo.
-    echo ⚠️  client_secret.json not found
+    echo [WARN] client_secret.json not found
+    echo Current directory: %CD%
+    echo Searched path: %CLIENT_SECRET_PATH%
+    echo.
+    echo Nearby matching files:
+    dir /b "%~dp0client_secret*" 2>nul
     echo.
     echo SETUP INSTRUCTIONS:
     echo ========================================================================
@@ -50,7 +61,7 @@ if not exist "client_secret.json" (
     echo 2. Create a new project (e.g., "align-gmail-fetch")
     echo 3. Click "Enable APIs and Services"
     echo 4. Search for "Gmail API" and enable it
-    echo 5. Click "Create Credentials" → "OAuth 2.0 Client ID"
+    echo 5. Click "Create Credentials" then "OAuth 2.0 Client ID"
     echo 6. Choose "Desktop app" as the application type
     echo 7. Download the JSON file
     echo 8. Rename it to: client_secret.json
@@ -63,7 +74,7 @@ if not exist "client_secret.json" (
     exit /b 1
 )
 
-echo ✅ client_secret.json found
+echo [OK] client_secret.json found at: %CLIENT_SECRET_FOUND%
 echo.
 
 REM Check if required Python packages are installed
@@ -71,14 +82,14 @@ echo Checking required Python packages...
 python -c "import google_auth_oauthlib.flow" >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo ⚠️  Required Python packages not installed
+    echo [WARN] Required Python packages not installed
     echo.
     echo Installing Google Auth packages...
     pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
     echo.
 )
 
-echo ✅ Required packages installed
+echo [OK] Required packages installed
 echo.
 
 REM Run the OAuth token generator
@@ -118,7 +129,7 @@ if %ERRORLEVEL% EQU 0 (
     echo.
     echo ========================================================================
     echo.
-    echo ⚠️  SECURITY REMINDER:
+    echo [SECURITY REMINDER]
     echo   • Keep client_secret.json and token.pickle secure
     echo   • Never share these files
     echo   • These files are already excluded from git (.gitignore)
@@ -127,7 +138,7 @@ if %ERRORLEVEL% EQU 0 (
     pause >nul
 ) else (
     echo.
-    echo ❌ OAuth setup failed
+    echo [ERROR] OAuth setup failed
     echo.
     echo Common issues:
     echo   • Browser didn't open - try a different browser

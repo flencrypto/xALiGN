@@ -85,6 +85,29 @@ const config: Config = {
       },
       boxShadow: {
         panel: "0 12px 30px rgba(0,0,0,.45)",
+        glow:  "0 0 20px rgba(0,229,255,0.15), 0 8px 32px rgba(0,0,0,0.30)",
+        "glow-lg": "0 0 40px rgba(0,229,255,0.20), 0 16px 48px rgba(0,0,0,0.40)",
+        "inner-glow": "inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 30px rgba(0,0,0,.45)",
+      },
+      animation: {
+        "fade-in": "fadeIn 0.5s ease forwards",
+        "fade-in-up": "fadeInUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards",
+        "pulse-slow": "pulse 3s cubic-bezier(0.4,0,0.6,1) infinite",
+        "slide-in-right": "slideInRight 0.4s cubic-bezier(0.16,1,0.3,1) forwards",
+      },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        fadeInUp: {
+          from: { opacity: "0", transform: "translateY(16px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        slideInRight: {
+          from: { opacity: "0", transform: "translateX(20px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
     },
   },

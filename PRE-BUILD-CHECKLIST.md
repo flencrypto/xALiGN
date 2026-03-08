@@ -398,4 +398,20 @@ Any "Must-Have" item failed:
 
 ---
 
+## ⚡ One-Click Local Execution
+
+Run tests and build the installer in one command:
+
+```cmd
+run-test-and-deploy.bat
+```
+
+This script:
+- Runs `backend\test-notifications.bat`
+- Aborts immediately if tests fail
+- Builds installer via Inno Setup only on test pass
+- Confirms output at `installer\output\aLiGN-Setup.exe`
+
+---
+
 **Ready to ship!** 🎉

@@ -12,10 +12,6 @@ export default function SignInPage() {
             headerSubtitle: "text-slate-600 dark:text-slate-400",
           }
         }}
-        routing="path"
-        path="/sign-in"
-        signUpUrl="/sign-up"
-        forceRedirectUrl="/dashboard"
         fallbackRedirectUrl="/dashboard"
       />
     </div>

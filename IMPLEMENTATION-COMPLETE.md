@@ -146,11 +146,11 @@ python tests\manual_test_notifications.py
 See [PRE-BUILD-CHECKLIST.md](PRE-BUILD-CHECKLIST.md) for complete validation checklist.
 
 **Quick Checklist:**
-- [ ] Run `test-notifications.bat` → All pass or expected warnings
-- [ ] Run `setup-gmail-oauth.bat` → Wizard completes successfully
-- [ ] Verify `.gitignore` excludes sensitive files
-- [ ] Build installer → No errors
-- [ ] Test installer on clean machine
+- [ ] Run `test-notifications.bat` → All pass or expected warnings (pending manual run)
+- [ ] Run `setup-gmail-oauth.bat` → Wizard completes successfully (pending manual run)
+- [x] Verify `.gitignore` excludes sensitive files (`.env`, `client_secret.json`, `token.pickle`, `gmail_credentials.json`)
+- [x] Build installer → No errors (installer artifacts present: `installer/output/aLiGN-Setup.exe`, `installer/output/aLiGN-Setup-fixed.exe`)
+- [ ] Test installer on clean machine (pending)
 
 ---
 

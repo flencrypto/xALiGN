@@ -5,6 +5,7 @@ REM Run this to validate the notification system is working correctly
 setlocal enabledelayedexpansion
 
 cd /d "%~dp0"
+set "PYTHONPATH=%CD%\..;%PYTHONPATH%"
 
 echo ========================================================================
 echo  aLiGN - Notification System Test
@@ -14,13 +15,13 @@ echo This will test the fallback notification system that alerts you when
 echo the daily briefing email is missing.
 echo.
 echo Tests include:
-echo   • Environment configuration
-echo   • Windows file paths
-echo   • User settings
-echo   • X/Twitter draft creation
-echo   • Gmail draft creation
-echo   • Gmail briefing fetch
-echo   • Full fallback orchestration
+echo   - Environment configuration
+echo   - Windows file paths
+echo   - User settings
+echo   - X/Twitter draft creation
+echo   - Gmail draft creation
+echo   - Gmail briefing fetch
+echo   - Full fallback orchestration
 echo.
 echo ========================================================================
 echo.
@@ -31,7 +32,7 @@ echo.
 REM Check if Python is available
 where python >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo ❌ ERROR: Python not found
+    echo [ERROR] Python not found
     pause
     exit /b 1
 )
@@ -42,7 +43,7 @@ python tests\test_notifications.py
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ========================================================================
-    echo  ✅ ALL TESTS PASSED
+    echo  [OK] ALL TESTS PASSED
     echo ========================================================================
     echo.
     echo The notification system is ready for production use.
@@ -55,21 +56,21 @@ if %ERRORLEVEL% EQU 0 (
     echo   5. Does NOT auto-send (drafts only, safe mode)
     echo.
     echo To enable auto-send (not recommended):
-    echo   • Set full_autopilot=True in user settings
-    echo   • Only use for critical production environments
+    echo   - Set full_autopilot=True in user settings
+    echo   - Only use for critical production environments
     echo.
 ) else (
     echo.
     echo ========================================================================
-    echo  ❌ SOME TESTS FAILED
+    echo  [ERROR] SOME TESTS FAILED
     echo ========================================================================
     echo.
     echo Please review the errors above and fix before using in production.
     echo.
     echo Common issues:
-    echo   • Gmail OAuth not configured - run setup-gmail-oauth.bat
-    echo   • Missing .env variables - check backend\.env
-    echo   • NOTIFICATION_EMAIL not set - add your email to .env
+    echo   - Gmail OAuth not configured - run setup-gmail-oauth.bat
+    echo   - Missing .env variables - check backend\.env
+    echo   - NOTIFICATION_EMAIL not set - add your email to .env
     echo.
     echo For detailed setup instructions, see:
     echo   docs\gmail-fallback-setup.md
