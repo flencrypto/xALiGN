@@ -36,6 +36,7 @@ from backend.schemas.bid import (
 )
 from backend.services import document_parser
 from backend.services import grok_client
+from backend.services.integration_requirements import ensure_integration_configured
 from backend.core.config import settings
 
 logger = logging.getLogger("align.bids")
@@ -365,8 +366,12 @@ async def generate_compliance_answer(
     if not item or item.bid_id != bid_id:
         raise HTTPException(status_code=404, detail="Compliance item not found")
 
-    if not grok_client.is_configured():
-        raise HTTPException(503, "XAI_API_KEY not configured – LLM answers unavailable")
+    ensure_integration_configured(
+        integration_id="grok_ai",
+        integration_name="Grok AI",
+        required_env_vars=["XAI_API_KEY"],
+        setup_path="/setup#grok_ai",
+    )
 
     try:
         result = await grok_client.generate_compliance_answer(

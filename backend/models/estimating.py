@@ -35,7 +35,9 @@ class EstimatingProject(Base):
     bid_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("bids.id", ondelete="CASCADE"), nullable=False
     )
-    project_type: Mapped[ProjectType] = mapped_column(Enum(ProjectType), nullable=False)
+    project_type: Mapped[ProjectType] = mapped_column(
+        Enum(ProjectType, name="estimating_project_type"), nullable=False
+    )
     tier_level: Mapped[str | None] = mapped_column(String(10))
     total_budget: Mapped[float | None] = mapped_column(Float)
     contingency_pct: Mapped[float | None] = mapped_column(Float, default=10.0)

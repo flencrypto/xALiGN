@@ -31,17 +31,9 @@
 # ── Next.js App Router support ───────────────────────────────────────────────
 # Full support for Server Components, Route Handlers, Middleware,
 # Image Optimisation and ISR via the official plugin.
+# The plugin is pinned as a devDependency in frontend/package.json.
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-# ── Redirect rules ───────────────────────────────────────────────────────────
-# Belt-and-braces catch-all so direct links (/dashboard, /bids/123 etc.)
-# always hit the Next.js handler instead of 404.
-[[redirects]]
-  from   = "/*"
-  to     = "/.netlify/functions/___netlify-handler"
-  status = 200
-  force  = false
 
 # ── Headers (optional – add any you need) ────────────────────────────────────
 [[headers]]

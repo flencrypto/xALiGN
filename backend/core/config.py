@@ -16,8 +16,11 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./align.db"
 
+    # Webhooks
+    WEBHOOK_SECRET: str = "your-super-secret-key-here"  # Change in production!
+
     # Authentication  (none | clerk | auth0)
-    AUTH_PROVIDER: str = "none"
+    AUTH_PROVIDER: str = "clerk"
     CLERK_ISSUER: str = ""
     CLERK_JWKS_URL: str = ""
     AUTH0_DOMAIN: str = ""
@@ -30,6 +33,16 @@ class Settings(BaseSettings):
     S3_REGION: str = "eu-west-2"
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
+
+    # Gmail Integration (for auto-fetching briefings)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REFRESH_TOKEN: str = ""  # Generate via OAuth flow
+    BRIEFING_EMAIL_SUBJECT: str = "GLOBAL DATA CENTRE INTELLIGENCE BRIEFING"
+
+    # Fallback Notifications (when briefing email is missing)
+    NOTIFICATION_EMAIL: str = ""  # Email for fallback notifications
+    X_HANDLE: str = "TheMrFlen"  # X/Twitter handle for DM notifications
 
     class Config:
         env_file = ".env"

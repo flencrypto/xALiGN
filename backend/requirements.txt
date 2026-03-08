@@ -6,6 +6,7 @@ pydantic-settings==2.2.1
 python-multipart==0.0.22
 aiofiles==23.2.1
 httpx==0.27.0
+requests==2.32.4
 
 # HTML parsing (Website Swoop)
 beautifulsoup4==4.12.3
@@ -26,3 +27,15 @@ psycopg2-binary==2.9.9
 
 # S3 / object storage (production)
 boto3==1.34.131
+
+# Intelligence Collection Layer (BATCH 1)
+feedparser==6.0.11
+apscheduler==3.10.4
+
+# Data Processing Layer (BATCH 2)
+rapidfuzz==3.9.3
+
+# Gmail Integration (for auto-fetching briefings)
+google-auth==2.29.0
+google-auth-oauthlib==1.2.0
+google-api-python-client==2.122.0

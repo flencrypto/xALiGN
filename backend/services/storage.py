@@ -39,22 +39,34 @@ _S3_REGION = os.getenv("S3_REGION", "us-east-1")
 
 # ── Local ──────────────────────────────────────────────────────────────────────
 
+def _local_resolve(key: str) -> Path:
+    """
+    Resolve *key* relative to _UPLOAD_DIR and raise ValueError if the
+    resolved path escapes the upload directory (path-traversal guard).
+    """
+    resolved = (_UPLOAD_DIR / key).resolve()
+    upload_root = _UPLOAD_DIR.resolve()
+    if not resolved.is_relative_to(upload_root):
+        raise ValueError(f"Storage key {key!r} escapes the upload directory.")
+    return resolved
+
+
 def _local_save(data: bytes, key: str) -> str:
-    dest = _UPLOAD_DIR / key
+    dest = _local_resolve(key)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(data)
     return str(dest)
 
 
 def _local_load(key: str) -> bytes:
-    path = _UPLOAD_DIR / key
+    path = _local_resolve(key)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {key}")
     return path.read_bytes()
 
 
 def _local_delete(key: str) -> None:
-    path = _UPLOAD_DIR / key
+    path = _local_resolve(key)
     if path.exists():
         try:
             path.unlink()

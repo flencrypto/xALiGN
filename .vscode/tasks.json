@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run one-click test+deploy",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"run-test-and-deploy.bat"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Run OAuth wizard",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"backend\\setup-gmail-oauth.bat"
+			],
+			"isBackground": false
+		}
+	]
+}

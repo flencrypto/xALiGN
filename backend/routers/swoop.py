@@ -31,6 +31,7 @@ from backend.models.account import (
 from backend.schemas.account import AccountRead
 from backend.services import grok_client
 from backend.services.crawler import _validate_url, _normalise_url
+from backend.services.integration_requirements import ensure_integration_configured
 
 logger = logging.getLogger("align.swoop")
 
@@ -157,11 +158,12 @@ async def website_swoop(payload: SwoopRequest, db: Session = Depends(get_db)):
 
     Requires **XAI_API_KEY** to be configured.
     """
-    if not grok_client.is_configured():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Grok AI is not configured. Set XAI_API_KEY in the environment.",
-        )
+    ensure_integration_configured(
+        integration_id="grok_ai",
+        integration_name="Grok AI",
+        required_env_vars=["XAI_API_KEY"],
+        setup_path="/setup#grok_ai",
+    )
 
     url = payload.url.strip()
     if not url.startswith(("http://", "https://")):

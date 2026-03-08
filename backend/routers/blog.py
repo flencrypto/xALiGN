@@ -17,6 +17,7 @@ from backend.schemas.intel import (
 )
 from backend.services import grok_client
 from backend.core.config import settings
+from backend.services.integration_requirements import ensure_integration_configured
 
 logger = logging.getLogger("align.blog")
 
@@ -51,11 +52,12 @@ async def generate_blog_post(payload: BlogGenerateRequest, db: Session = Depends
     If company_intel_id is supplied, real intelligence is injected for grounded content.
     Requires XAI_API_KEY.
     """
-    if not grok_client.is_configured():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Grok AI is not configured. Set XAI_API_KEY in the environment.",
-        )
+    ensure_integration_configured(
+        integration_id="grok_ai",
+        integration_name="Grok AI",
+        required_env_vars=["XAI_API_KEY"],
+        setup_path="/setup#grok_ai",
+    )
 
     # Build rich context from company intel if provided
     context = ""

@@ -1,0 +1,463 @@
+BATCH 2 — Data Processing Layer
+
+Purpose: convert messy signals into structured intelligence.
+
+6. Structured Intelligence Parser
+
+What it does:
+Extracts structured information from articles.
+
+Extracts:
+
+company
+
+location
+
+project
+
+investment
+
+MW capacity
+
+project stage
+
+Needs
+
+LLM extraction pipeline
+
+NLP entity recognition
+
+article metadata storage
+
+7. Entity Extraction Engine
+
+What it does:
+Identifies companies, suppliers, contractors, technologies, and regions from text.
+
+Needs
+
+named entity recognition
+
+company database
+
+entity linking system
+
+8. Deduplication Engine
+
+What it does:
+Detects when multiple articles refer to the same infrastructure project.
+
+Needs
+
+fuzzy matching
+
+project similarity scoring
+
+project ID system
+
+9. Source Confidence Scorer
+
+What it does:
+Rates credibility of each signal.
+
+Needs
+
+source trust list
+
+scoring algorithm
+
+source reliability table
+
+10. Signal Classification Engine
+
+What it does:
+Classifies signals into types:
+
+new build
+
+expansion
+
+energy deal
+
+tender
+
+supplier contract
+
+Needs
+
+text classification model
+
+signal taxonomy
+
+BATCH 3 — Intelligence Database Layer
+
+Purpose: store structured infrastructure intelligence.
+
+11. Project Expansion Database
+
+What it does:
+Stores all detected infrastructure projects.
+
+Needs
+Fields:
+
+project name
+
+company
+
+location
+
+MW
+
+capex
+
+stage
+
+partners
+
+source
+
+Database:
+Postgres / Supabase
+
+12. Company Intelligence Database
+
+What it does:
+Stores detailed company profiles.
+
+Needs
+Fields:
+
+company name
+
+category
+
+headquarters
+
+stock ticker
+
+known partners
+
+13. Opportunity Signal Database
+
+What it does:
+Stores commercial opportunities detected from signals.
+
+Needs
+Fields:
+
+project ID
+
+opportunity type
+
+potential suppliers
+
+likelihood score
+
+BATCH 4 — Intelligence Visualisation Layer
+14. Global Hyperscale Expansion Map
+
+What it does:
+Displays all projects globally.
+
+Needs
+
+geolocation fields
+
+Mapbox or Leaflet
+
+project API
+
+15. Regional Heatmap Engine
+
+What it does:
+Shows regions with the most infrastructure growth.
+
+Needs
+
+project aggregation
+
+geospatial clustering
+
+16. Capacity Dashboard
+
+What it does:
+Shows total MW pipeline by company and region.
+
+Needs
+
+capacity field
+
+aggregation queries
+
+charting library
+
+17. Capex Tracker
+
+What it does:
+Tracks infrastructure investment globally.
+
+Needs
+
+investment field
+
+financial aggregation engine
+
+BATCH 5 — BD Intelligence Layer
+18. BD Opportunity Agent
+
+What it does:
+Suggests companies to contact based on detected projects.
+
+Needs
+
+project database
+
+company ecosystem database
+
+scoring algorithm
+
+19. Opportunity Scoring Engine
+
+What it does:
+Ranks opportunities based on commercial value.
+
+Needs
+Inputs:
+
+project size
+
+stage
+
+hyperscaler involvement
+
+Algorithm:
+weighted scoring model
+
+20. Suggested Action Engine
+
+What it does:
+Recommends BD actions.
+
+Example:
+
+monitor project
+
+approach consultants
+
+track contractor awards
+
+Needs
+
+rule-based AI logic
+
+project stage data
+
+21. Account Prioritisation Dashboard
+
+What it does:
+Ranks target companies for outreach.
+
+Needs
+
+BD scoring
+
+opportunity database
+
+BATCH 6 — Relationship Intelligence Layer
+22. Signal Correlation Engine
+
+What it does:
+Detects patterns between companies and projects.
+
+Example:
+
+which suppliers appear with which hyperscalers
+
+Needs
+
+project partner data
+
+graph analysis engine
+
+23. Ecosystem Graph Generator
+
+What it does:
+Visualises supply-chain relationships.
+
+Needs
+
+graph database or network library
+
+company relationship data
+
+24. Contractor Momentum Tracker
+
+What it does:
+Tracks which contractors are winning the most projects.
+
+Needs
+
+project partner fields
+
+time-series queries
+
+25. Supplier Momentum Tracker
+
+What it does:
+Tracks which infrastructure suppliers dominate deployments.
+
+Needs
+
+supplier tagging
+
+project partner aggregation
+
+BATCH 7 — Predictive Intelligence Layer
+26. Hyperscale Build Prediction Engine
+
+What it does:
+Predicts future hyperscale build regions.
+
+Needs
+Signals:
+
+power availability
+
+fibre infrastructure
+
+existing clusters
+
+AI demand
+
+Model:
+weighted prediction scoring
+
+27. Region Momentum Model
+
+What it does:
+Ranks regions by likely infrastructure growth.
+
+Needs
+
+MW pipeline
+
+capex
+
+signal frequency
+
+28. Project Likelihood Model
+
+What it does:
+Estimates probability that a signal becomes a real project.
+
+Needs
+
+historical project signals
+
+signal types
+
+machine learning model
+
+BATCH 8 — Workflow Automation
+29. Daily Task Orchestrator
+
+What it does:
+Runs intelligence tasks daily.
+
+Needs
+
+cron scheduler
+
+task queue
+
+30. Alert Engine
+
+What it does:
+Sends alerts when important signals appear.
+
+Example:
+
+hyperscale project
+
+100MW build
+
+new region
+
+Needs
+
+event triggers
+
+notification system
+
+31. Watchlist Manager
+
+What it does:
+Lets users track specific companies or regions.
+
+Needs
+
+watchlist table
+
+filtering logic
+
+BATCH 9 — Reporting Layer
+32. Executive Report Generator
+
+What it does:
+Creates daily or weekly infrastructure briefings.
+
+Needs
+
+intelligence database
+
+LLM summarisation
+
+33. Email Briefing Generator
+
+What it does:
+Creates automated daily intelligence emails.
+
+Needs
+
+email service
+
+report formatting
+
+34. PDF Report Exporter
+
+What it does:
+Generates investor-style reports.
+
+Needs
+
+report templates
+
+PDF generator
+
+BATCH 10 — AI Interface Layer
+35. Natural Language Search
+
+What it does:
+Lets users query the intelligence database.
+
+Example:
+
+show AWS projects over 100MW in Europe
+
+Needs
+
+vector search
+
+database query translator
+
+36. Ask aLign AI Agent
+
+What it does:
+Conversational interface over the infrastructure dataset.
+
+Needs
+
+LLM integration
+
+database retrieval layer

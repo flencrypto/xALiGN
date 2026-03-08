@@ -44,8 +44,10 @@ export interface TriggerSignal {
   id: number;
   account_id: number;
   signal_type: string;
+  title: string;
   description?: string;
-  source?: string;
+  source_url?: string;
+  status?: string;
   detected_at?: string;
 }
 
@@ -53,11 +55,10 @@ export interface Opportunity {
   id: number;
   account_id: number;
   title: string;
+  description?: string;
   stage: string;
   estimated_value?: number;
-  probability?: number;
-  qualification_score?: number;
-  notes?: string;
+  currency?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -65,17 +66,27 @@ export interface Opportunity {
 export interface Qualification {
   id: number;
   opportunity_id: number;
-  score: number;
-  criteria: Record<string, number>;
-  recommendation?: string;
-  notes?: string;
-  created_at?: string;
+  budget_confidence: number;
+  route_to_market_clarity: number;
+  incumbent_lock_in_risk: number;
+  procurement_timeline_realism: number;
+  technical_fit: number;
+  tier_level?: string;
+  uptime_target?: number;
+  mep_complexity?: string;
+  live_environment: boolean;
+  overall_score: number;
+  go_no_go: 'go' | 'no_go' | 'conditional';
+  rationale?: string;
+  scored_at?: string;
 }
 
 export interface Bid {
   id: number;
   opportunity_id: number;
   title: string;
+  tender_ref?: string;
+  submission_date?: string;
   status: string;
   win_themes?: string;
   notes?: string;
@@ -118,33 +129,32 @@ export interface RFI {
 
 export interface EstimatingProject {
   id: number;
-  bid_id?: number;
-  title: string;
-  project_type?: string;
-  tier?: string;
-  budget?: number;
-  scope_gap_score?: number;
-  notes?: string;
+  bid_id: number;
+  project_type: string;
+  tier_level?: string;
+  total_budget?: number;
+  contingency_pct?: number;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface ScopeGap {
   id: number;
-  estimating_id: number;
+  project_id: number;
   category: string;
-  item: string;
-  status: string;
-  risk_level?: string;
+  description: string;
+  identified: boolean;
+  owner_agreed: boolean;
+  included_in_price: boolean;
   notes?: string;
 }
 
 export interface ChecklistItem {
   id: number;
-  estimating_id: number;
+  project_id: number;
   category: string;
   item: string;
-  checked: boolean;
+  completed: boolean;
   notes?: string;
 }
 
@@ -224,6 +234,19 @@ export const swoopApi = {
     }),
 };
 
+export interface QualificationInput {
+  budget_confidence: number;
+  route_to_market_clarity: number;
+  incumbent_lock_in_risk: number;
+  procurement_timeline_realism: number;
+  technical_fit: number;
+  tier_level?: string;
+  uptime_target?: number;
+  mep_complexity?: string;
+  live_environment?: boolean;
+  rationale?: string;
+}
+
 // ── Opportunities ──────────────────────────────────────────────────────────
 
 export const opportunitiesApi = {
@@ -232,7 +255,7 @@ export const opportunitiesApi = {
   get: (id: number) => request<Opportunity>(`/opportunities/${id}`),
   update: (id: number, data: Partial<Opportunity>) => request<Opportunity>(`/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: number) => request<void>(`/opportunities/${id}`, { method: 'DELETE' }),
-  qualify: (id: number, data: Partial<Qualification>) => request<Qualification>(`/opportunities/${id}/qualify`, { method: 'POST', body: JSON.stringify(data) }),
+  qualify: (id: number, data: QualificationInput) => request<Qualification>(`/opportunities/${id}/qualify`, { method: 'POST', body: JSON.stringify(data) }),
   getQualification: (id: number) => request<Qualification>(`/opportunities/${id}/qualification`),
 };
 
@@ -264,7 +287,7 @@ export const estimatingApi = {
   createScopeGap: (id: number, data: Partial<ScopeGap>) => request<ScopeGap>(`/estimating/${id}/scope-gaps`, { method: 'POST', body: JSON.stringify(data) }),
   listChecklist: (id: number) => request<ChecklistItem[]>(`/estimating/${id}/checklist`),
   createChecklistItem: (id: number, data: Partial<ChecklistItem>) => request<ChecklistItem>(`/estimating/${id}/checklist`, { method: 'POST', body: JSON.stringify(data) }),
-  getScopeGapReport: (id: number) => request<{ score: number; items: ScopeGap[] }>(`/estimating/${id}/scope-gap-report`),
+  getScopeGapReport: (id: number) => request<{ risk_score: number; total_items: number; identified_count: number; not_included_in_price: number }>(`/estimating/${id}/scope-gap-report`),
 };
 
 // ── Intelligence Types ─────────────────────────────────────────────────────
@@ -509,9 +532,13 @@ export interface KeyPointSuggestResult {
 }
 
 export interface CallIntelligence {
+    account_id?: number;
+    account_name?: string;
   id: number;
   company_name?: string;
   executive_name?: string;
+    audio_file_url?: string;
+    call_date?: string;
   transcript?: string;
   sentiment_score?: number;
   competitor_mentions?: string[];
@@ -557,18 +584,33 @@ export const tenderApi = {
 // ── Calls API ──────────────────────────────────────────────────────────────
 
 export const callsApi = {
-  analyse: (data: { company_name?: string; executive_name?: string; transcript: string }) => {
+  analyse: (data: { 
+    company_name?: string; 
+    executive_name?: string; 
+    transcript?: string; 
+    account_id?: number;
+    call_date?: string;
+    file?: File;
+  }) => {
     const form = new FormData();
     if (data.company_name) form.append('company_name', data.company_name);
     if (data.executive_name) form.append('executive_name', data.executive_name);
-    form.append('transcript', data.transcript);
+    if (data.transcript) form.append('transcript', data.transcript);
+    if (data.account_id) form.append('account_id', data.account_id.toString());
+    if (data.call_date) form.append('call_date', data.call_date);
+    if (data.file) form.append('file', data.file);
     return fetch(`${BASE_URL}/calls/analyse`, { method: 'POST', body: form }).then(async (res) => {
       if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
       return res.json() as Promise<CallIntelligence>;
     });
   },
-  list: (company_name?: string) =>
-    request<CallIntelligence[]>(`/calls${company_name ? `?company_name=${encodeURIComponent(company_name)}` : ''}`),
+  list: (filters?: { company_name?: string; account_id?: number }) => {
+    const params = new URLSearchParams();
+    if (filters?.company_name) params.append('company_name', filters.company_name);
+    if (filters?.account_id !== undefined) params.append('account_id', filters.account_id.toString());
+    const query = params.toString();
+    return request<CallIntelligence[]>(`/calls${query ? `?${query}` : ''}`);
+  },
   get: (id: number) => request<CallIntelligence>(`/calls/${id}`),
   delete: (id: number) => request<void>(`/calls/${id}`, { method: 'DELETE' }),
   suggestKeyPointLinks: (callId: number, pointIndex: number) =>
@@ -717,3 +759,265 @@ export const complianceAnswerApi = {
     }),
 };
 
+
+// ── Intelligence Database Types ────────────────────────────────────────────
+
+export interface InfrastructureProject {
+  id: number;
+  name: string;
+  company?: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  capacity_mw?: number;
+  capex_millions?: number;
+  capex_currency?: string;
+  stage?: string;
+  project_type?: string;
+  partners?: string;
+  source_url?: string;
+  source_name?: string;
+  confidence_score?: number;
+  signal_type?: string;
+  is_duplicate?: boolean;
+  notes?: string;
+  detected_at?: string;
+}
+
+export interface CompanyProfile {
+  id: number;
+  name: string;
+  category?: string;
+  headquarters?: string;
+  stock_ticker?: string;
+  website?: string;
+  known_partners?: string;
+  total_capacity_mw?: number;
+  total_capex_millions?: number;
+  active_projects?: number;
+  regions_active?: string;
+  description?: string;
+}
+
+export interface OpportunitySignal {
+  id: number;
+  project_id?: number;
+  opportunity_type?: string;
+  title: string;
+  company?: string;
+  location?: string;
+  potential_suppliers?: string;
+  likelihood_score?: number;
+  estimated_value_millions?: number;
+  estimated_tender_date?: string;
+  source_signal_url?: string;
+  is_actioned?: boolean;
+  detected_at?: string;
+}
+
+export interface ProjectStats {
+  total_projects: number;
+  total_capacity_mw: number;
+  total_capex_millions: number;
+  by_stage: Record<string, number>;
+  by_type: Record<string, number>;
+  top_companies_by_mw: Array<{ company: string; total_mw: number }>;
+}
+
+export interface HeatmapPoint {
+  location: string;
+  project_count: number;
+  total_mw: number;
+  total_capex: number;
+  lat?: number;
+  lon?: number;
+}
+
+export interface NewsArticle {
+  id: number;
+  title: string;
+  url?: string;
+  source_name?: string;
+  summary?: string;
+  category?: string;
+  keywords_matched?: string;
+  published_at?: string;
+  source_type?: string;
+  fetched_at?: string;
+}
+
+export interface IntelligenceStatus {
+  collector: string;
+  record_count: number;
+  last_collected_at?: string;
+}
+
+// ── Intelligence API ───────────────────────────────────────────────────────
+
+export const intelligenceApi = {
+  // News
+  runNewsAggregator: () => request<{ status: string; records_collected: number }>('/intelligence/news/run', { method: 'POST' }),
+  listNews: (params?: { category?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set('category', params.category);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<NewsArticle[]>(`/intelligence/news?${qs}`);
+  },
+  // Planning
+  runPlanningScraper: () => request<{ status: string; records_collected: number }>('/intelligence/planning/run', { method: 'POST' }),
+  listPlanning: (params?: { is_data_centre?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.is_data_centre !== undefined) qs.set('is_data_centre', String(params.is_data_centre));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/planning?${qs}`);
+  },
+  // Press releases
+  runPressReleases: () => request<{ status: string }>('/intelligence/press-releases/run', { method: 'POST' }),
+  listPressReleases: (params?: { vendor_name?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.vendor_name) qs.set('vendor_name', params.vendor_name);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/press-releases?${qs}`);
+  },
+  // Jobs
+  runJobDetector: () => request<{ status: string }>('/intelligence/jobs/run', { method: 'POST' }),
+  listJobs: (params?: { company_name?: string; is_spike?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.company_name) qs.set('company_name', params.company_name);
+    if (params?.is_spike !== undefined) qs.set('is_spike', String(params.is_spike));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/jobs?${qs}`);
+  },
+  // Infrastructure
+  runInfraMonitor: () => request<{ status: string }>('/intelligence/infrastructure/run', { method: 'POST' }),
+  listInfrastructure: (params?: { announcement_type?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.announcement_type) qs.set('announcement_type', params.announcement_type);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<unknown[]>(`/intelligence/infrastructure?${qs}`);
+  },
+  // Status
+  getStatus: () => request<IntelligenceStatus[]>('/intelligence/status'),
+};
+
+// ── Projects (Intelligence Database) API ──────────────────────────────────
+
+export const projectsApi = {
+  list: (params?: { stage?: string; company?: string; has_mw?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.stage) qs.set('stage', params.stage);
+    if (params?.company) qs.set('company', params.company);
+    if (params?.has_mw !== undefined) qs.set('has_mw', String(params.has_mw));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<InfrastructureProject[]>(`/projects/?${qs}`);
+  },
+  get: (id: number) => request<InfrastructureProject>(`/projects/${id}`),
+  create: (data: Partial<InfrastructureProject>) => request<InfrastructureProject>('/projects/', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<InfrastructureProject>) => request<InfrastructureProject>(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: number) => request<void>(`/projects/${id}`, { method: 'DELETE' }),
+  getStats: () => request<ProjectStats>('/projects/stats/summary'),
+  getMapData: (stage?: string) => {
+    const qs = stage ? `?stage=${stage}` : '';
+    return request<InfrastructureProject[]>(`/projects/geo/map-data${qs}`);
+  },
+  getHeatmap: () => request<HeatmapPoint[]>('/projects/geo/heatmap'),
+  listCompanies: (params?: { category?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.category) qs.set('category', params.category);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<CompanyProfile[]>(`/projects/companies/?${qs}`);
+  },
+  createCompany: (data: Partial<CompanyProfile>) => request<CompanyProfile>('/projects/companies/', { method: 'POST', body: JSON.stringify(data) }),
+  listOpportunities: (params?: { opportunity_type?: string; is_actioned?: boolean; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.opportunity_type) qs.set('opportunity_type', params.opportunity_type);
+    if (params?.is_actioned !== undefined) qs.set('is_actioned', String(params.is_actioned));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return request<OpportunitySignal[]>(`/projects/opportunities/?${qs}`);
+  },
+  createOpportunity: (data: Partial<OpportunitySignal>) => request<OpportunitySignal>('/projects/opportunities/', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Processing API ─────────────────────────────────────────────────────────
+
+export const processingApi = {
+  runAll: () => request<{ status: string; results: Record<string, unknown> }>('/processing/run-all', { method: 'POST' }),
+  runParser: () => request<{ status: string; records_processed: number }>('/processing/parse/run', { method: 'POST' }),
+  runEntities: () => request<{ status: string; records_processed: number }>('/processing/entities/run', { method: 'POST' }),
+  runDeduplication: () => request<{ status: string; duplicate_groups: number; duplicates_flagged: number }>('/processing/deduplicate/run', { method: 'POST' }),
+  runScoring: () => request<{ status: string; records_scored: number }>('/processing/score/run', { method: 'POST' }),
+  runClassification: () => request<{ status: string; records_classified: number }>('/processing/classify/run', { method: 'POST' }),
+};
+
+// ── Agents API ─────────────────────────────────────────────────────────────
+
+export interface AgentCatalogueEntry {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  endpoint: string;
+  input_field: string;
+  placeholder: string;
+}
+
+export interface AgentResult {
+  status: string;
+  agent: string;
+  result: Record<string, unknown>;
+}
+
+export const agentsApi = {
+  catalogue: () => request<{ agents: AgentCatalogueEntry[] }>('/agents/catalogue'),
+  runBuildCaptain: (requestText: string) =>
+    request<AgentResult>('/agents/build-captain', {
+      method: 'POST',
+      body: JSON.stringify({ request: requestText }),
+    }),
+  runUiSurgeon: (description: string) =>
+    request<AgentResult>('/agents/ui-surgeon', {
+      method: 'POST',
+      body: JSON.stringify({ description }),
+    }),
+  runTestPilot: (feature_description: string) =>
+    request<AgentResult>('/agents/test-pilot', {
+      method: 'POST',
+      body: JSON.stringify({ feature_description }),
+    }),
+  runDataCurator: (context: string) =>
+    request<AgentResult>('/agents/data-curator', {
+      method: 'POST',
+      body: JSON.stringify({ context }),
+    }),
+  runOpsBoss: (context: string) =>
+    request<AgentResult>('/agents/ops-boss', {
+      method: 'POST',
+      body: JSON.stringify({ context }),
+    }),
+};
+
+
+// ── Setup / Integration Status API ────────────────────────────────────────
+
+export interface IntegrationStatus {
+  configured: boolean;
+  missing_vars: string[];
+  required_for: string[];
+  optional: boolean;
+  setup_path: string;
+  docs_url: string;
+  note?: string;
+  active_backend?: string;
+  active_provider?: string;
+}
+
+export interface SetupStatus {
+  integrations: Record<string, IntegrationStatus>;
+  all_required_configured: boolean;
+  auth_provider: string;
+  storage_backend: string;
+}
+
+export const setupApi = {
+  getStatus: () => request<SetupStatus>('/setup/status'),
+};

@@ -38,6 +38,7 @@ from backend.services.ai_workers import (
     TrendDetectionWorker,
 )
 from backend.services.governance import GovernanceLogger
+from backend.services.integration_requirements import ensure_integration_configured
 from backend.services.orchestrator import Orchestrator
 
 logger = logging.getLogger("align.intel")
@@ -70,11 +71,12 @@ async def research_company(payload: CompanyIntelRequest, db: Session = Depends(g
 
     Requires XAI_API_KEY to be configured.
     """
-    if not grok_client.is_configured():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Grok AI is not configured. Set XAI_API_KEY in the environment.",
-        )
+    ensure_integration_configured(
+        integration_id="grok_ai",
+        integration_name="Grok AI",
+        required_env_vars=["XAI_API_KEY"],
+        setup_path="/setup#grok_ai",
+    )
 
     # 1. Crawl public pages
     homepage_text = await crawler.crawl_homepage(payload.website)
