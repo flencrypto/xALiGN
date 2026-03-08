@@ -1,10 +1,18 @@
 // Set NEXT_PUBLIC_API_URL in .env.local to point to your backend (default: http://localhost:8000/api/v1)
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
 
+function buildHeaders(options?: RequestInit): Headers {
+  const headers = new Headers(options?.headers);
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  return headers;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: buildHeaders(options),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -16,7 +24,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 async function requestVoid(path: string, options?: RequestInit): Promise<void> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: buildHeaders(options),
   });
   if (!res.ok) {
     const text = await res.text();
