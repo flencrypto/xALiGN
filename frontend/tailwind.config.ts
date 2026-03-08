@@ -78,7 +78,16 @@ const config: Config = {
           text:     "var(--color-text-main)",
           muted:    "var(--color-text-muted)",
         },
-      },
+        /* ── short aliases (used by older pages) ── */
+        surface:        "rgb(var(--color-surface) / <alpha-value>)",
+        "border-subtle":"rgb(var(--color-border-subtle) / <alpha-value>)",
+        "text-main":    "rgb(var(--color-text-main) / <alpha-value>)",
+        "text-muted":   "rgb(var(--color-text-muted) / <alpha-value>)",
+        "text-faint":   "rgb(var(--color-text-faint) / <alpha-value>)",
+        success:        "rgb(var(--color-success) / <alpha-value>)",
+        warning:        "rgb(var(--color-warning) / <alpha-value>)",
+        danger:         "rgb(var(--color-danger) / <alpha-value>)",
+        "primary-dark": "rgb(var(--color-primary-dark) / <alpha-value>)",      },
       backgroundImage: {
         "grid-palantir":
           "linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px)",

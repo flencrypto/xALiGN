@@ -77,7 +77,7 @@ export default function Header({ title, action }: HeaderProps) {
         {action && <div>{action}</div>}
 
         {/* Notifications placeholder */}
-        <button className="w-9 h-9 rounded-xl bg-color-surface/60 flex items-center justify-center border border-color-border-subtle/50 hover:border-color-primary/30 hover:bg-color-primary/5 transition-all duration-200 relative">
+        <button aria-label="Notifications" className="w-9 h-9 rounded-xl bg-color-surface/60 flex items-center justify-center border border-color-border-subtle/50 hover:border-color-primary/30 hover:bg-color-primary/5 transition-all duration-200 relative">
           <Bell size={16} className="text-color-text-muted" />
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-color-primary animate-pulse" />
         </button>
