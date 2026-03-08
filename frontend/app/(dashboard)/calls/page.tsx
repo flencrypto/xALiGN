@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
-import { callsApi, CallIntelligence, KeyPoint, KeyPointSuggestResult } from '@/lib/api';
+import { callsApi, accountsApi, CallIntelligence, KeyPoint, KeyPointSuggestResult, Account } from '@/lib/api';
 import IntegrationGate from '@/components/IntegrationGate';
 import { useSetupStatus } from '@/lib/useSetupStatus';
 
@@ -10,6 +10,7 @@ export default function CallsPage() {
   const { isConfigured } = useSetupStatus();
   const grokConfigured = isConfigured('grok_ai');
   const [calls, setCalls] = useState<CallIntelligence[]>([]);
+    const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<CallIntelligence | null>(null);
@@ -23,16 +24,19 @@ export default function CallsPage() {
   const [linking, setLinking] = useState<number | null>(null);
 
   const [form, setForm] = useState({
+      account_id: undefined as number | undefined,
     company_name: '',
     executive_name: '',
     transcript: '',
+    call_date: '',
+    audio_file: undefined as File | undefined,
   });
 
   const fetchCalls = async (company?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await callsApi.list(company || undefined);
+      const data = await callsApi.list(company ? { company_name: company } : undefined);
       setCalls(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load calls');
@@ -41,7 +45,10 @@ export default function CallsPage() {
     }
   };
 
-  useEffect(() => { fetchCalls(); }, []);
+  useEffect(() => { 
+    fetchCalls(); 
+    accountsApi.list().then(setAccounts).catch(console.error);
+  }, []);
 
   const handleFilter = () => fetchCalls(filterCompany || undefined);
 
@@ -57,17 +64,27 @@ export default function CallsPage() {
   };
 
   const handleAnalyse = async () => {
-    if (!form.transcript) return;
+    if (!form.transcript && !form.audio_file) return;
     setAnalysing(true);
     try {
       const result = await callsApi.analyse({
         company_name: form.company_name || undefined,
         executive_name: form.executive_name || undefined,
-        transcript: form.transcript,
+        transcript: form.transcript || undefined,
+        account_id: form.account_id,
+        call_date: form.call_date || undefined,
+        file: form.audio_file,
       });
       setSelected(result);
       setShowAnalyseModal(false);
-      setForm({ company_name: '', executive_name: '', transcript: '' });
+      setForm({ 
+        account_id: undefined, 
+        company_name: '', 
+        executive_name: '', 
+        transcript: '', 
+        call_date: '', 
+        audio_file: undefined 
+      });
       fetchCalls(filterCompany || undefined);
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Analysis failed');
@@ -224,10 +241,24 @@ export default function CallsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="text-lg font-bold">{selected.company_name ?? 'Unknown Company'}</h2>
+                                        {selected.account_name && (
+                                          <p className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded w-fit mt-1">
+                                            🏢 {selected.account_name}
+                                          </p>
+                                        )}
                     {selected.executive_name && <p className="text-text-muted text-sm">{selected.executive_name}</p>}
                     <p className="text-xs text-text-faint mt-1">
-                      {selected.created_at ? new Date(selected.created_at).toLocaleString() : ''}
+                      {selected.call_date ? new Date(selected.call_date).toLocaleString() : 
+                       selected.created_at ? new Date(selected.created_at).toLocaleString() : ''}
                     </p>
+                                      {selected.audio_file_url && (
+                                        <div className="mt-2">
+                                          <audio controls className="w-full max-w-md">
+                                            <source src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${selected.audio_file_url}`} />
+                                            Your browser does not support audio playback.
+                                          </audio>
+                                        </div>
+                                      )}
                   </div>
                   <div className="flex items-center gap-3">
                     {selected.sentiment_score != null && (
@@ -413,6 +444,19 @@ export default function CallsPage() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-surface rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold mb-4">Analyse Call Transcript</h2>
+                          <div>
+                            <label className="text-xs text-text-muted block mb-1">Link to Account (Optional)</label>
+                            <select
+                              className="w-full bg-background border border-border-subtle rounded px-3 py-2 text-sm"
+                              value={form.account_id ?? ''}
+                              onChange={(e) => setForm({ ...form, account_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                            >
+                              <option value="">-- No Account --</option>
+                              {accounts.map((acc) => (
+                                <option key={acc.id} value={acc.id}>{acc.name}</option>
+                              ))}
+                            </select>
+                          </div>
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-text-muted block mb-1">Company Name</label>
@@ -433,12 +477,39 @@ export default function CallsPage() {
                 />
               </div>
               <div>
+                <label className="text-xs text-text-muted block mb-1">Call Date (Optional)</label>
+                <input
+                  type="datetime-local"
+                  className="w-full bg-background border border-border-subtle rounded px-3 py-2 text-sm"
+                  value={form.call_date}
+                  onChange={(e) => setForm({ ...form, call_date: e.target.value })}
+                />
+              </div>
+              <div>
                 <label className="text-xs text-text-muted block mb-1">
-                  Transcript *{' '}
+                  Audio File{' '}
+                  <span className="text-text-faint">(mp3, wav, m4a - max 50MB)</span>
+                </label>
+                <input
+                  type="file"
+                  accept="audio/mpeg,audio/wav,audio/m4a,audio/ogg"
+                  className="w-full bg-background border border-border-subtle rounded px-3 py-2 text-sm"
+                  onChange={(e) => setForm({ ...form, audio_file: e.target.files?.[0] })}
+                />
+                {form.audio_file && (
+                  <p className="text-xs text-text-muted mt-1">
+                    Selected: {form.audio_file.name} ({(form.audio_file.size / 1024 / 1024).toFixed(1)} MB)
+                  </p>
+                )}
+              </div>
+              <div className="text-center text-xs text-text-muted py-2">— OR —</div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1">
+                  Transcript{' '}
                   <span className="text-text-faint">(paste call transcript text)</span>
                 </label>
                 <textarea
-                  rows={10}
+                  rows={6}
                   className="w-full bg-background border border-border-subtle rounded px-3 py-2 text-sm font-mono"
                   value={form.transcript}
                   onChange={(e) => setForm({ ...form, transcript: e.target.value })}
@@ -455,7 +526,7 @@ export default function CallsPage() {
               </button>
               <button
                 onClick={handleAnalyse}
-                disabled={analysing || !form.transcript}
+                disabled={analysing || (!form.transcript && !form.audio_file)}
                 className="flex-1 bg-primary hover:bg-blue-700 disabled:opacity-50 py-2 rounded text-sm font-medium"
               >
                 {analysing ? 'Analysing…' : 'Analyse & Save'}

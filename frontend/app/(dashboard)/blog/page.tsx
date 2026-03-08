@@ -166,8 +166,9 @@ export default function BlogPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-text-muted text-xs mb-1">Tone</label>
+                    <label htmlFor="blog-tone" className="block text-text-muted text-xs mb-1">Tone</label>
                     <select
+                      id="blog-tone"
                       value={form.tone}
                       onChange={(e) => setForm((f) => ({ ...f, tone: e.target.value }))}
                       className="w-full bg-background border border-border-subtle rounded-lg px-3 py-2 text-text-main text-sm focus:outline-none focus:border-blue-500"
@@ -178,8 +179,9 @@ export default function BlogPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-text-muted text-xs mb-1">Word Count</label>
+                    <label htmlFor="blog-word-count" className="block text-text-muted text-xs mb-1">Word Count</label>
                     <input
+                      id="blog-word-count"
                       type="number"
                       min={300}
                       max={3000}
@@ -325,6 +327,7 @@ export default function BlogPage() {
                 {editMode ? (
                   <div className="space-y-3">
                     <textarea
+                      aria-label="Edit blog post content"
                       value={editBody}
                       onChange={(e) => setEditBody(e.target.value)}
                       rows={20}

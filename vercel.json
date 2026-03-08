@@ -1,0 +1,39 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd frontend && npm run build",
+  "devCommand": "cd frontend && npm run dev",
+  "installCommand": "cd frontend && npm install",
+  "framework": "nextjs",
+  "outputDirectory": "frontend/.next",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_API_URL": {
+      "description": "Backend API URL (e.g., https://your-backend.railway.app/api/v1)",
+      "required": true
+    },
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": {
+      "description": "Clerk Publishable Key (pk_test_... or pk_live_...)",
+      "required": true
+    },
+    "CLERK_SECRET_KEY": {
+      "description": "Clerk Secret Key (sk_test_... or sk_live_...)",
+      "required": true
+    },
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": {
+      "value": "/sign-in"
+    },
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": {
+      "value": "/sign-up"
+    },
+    "NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL": {
+      "value": "/dashboard"
+    },
+    "NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL": {
+      "value": "/dashboard"
+    }
+  }
+}

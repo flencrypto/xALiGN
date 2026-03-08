@@ -1,0 +1,66 @@
+# Vercel Ignore File
+# Exclude backend and non-frontend files from Vercel deployment
+
+# Backend (FastAPI)
+backend/
+*.pyc
+__pycache__/
+*.db
+*.db-shm
+*.db-wal
+
+# Docker files
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Installer
+installer/
+
+# Widgets
+widgets/
+
+# Documentation
+docs/
+
+# Environment files (use Vercel dashboard for env vars)
+.env
+.env.local
+.env.*.local
+
+# Gmail OAuth credentials
+client_secret.json
+token.pickle
+gmail_credentials.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+venv/
+.venv/
+*.egg-info/
+
+# Logs
+logs/
+*.log
+
+# Memory bank (local state)
+memory-bank/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

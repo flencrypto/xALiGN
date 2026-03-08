@@ -46,8 +46,11 @@ class TenderAwardRead(BaseModel):
 # ── Call Intelligence ─────────────────────────────────────────────────────────
 
 class CallIntelligenceCreate(BaseModel):
+    account_id: int | None = Field(None, description="Link to customer account")
     company_name: str | None = Field(None, max_length=500)
     executive_name: str | None = Field(None, max_length=255)
+    audio_file_url: str | None = Field(None, max_length=2048, description="Path or URL to audio file")
+    call_date: datetime | None = Field(None, description="Date and time of the call")
     transcript: str | None = None
 
 
@@ -55,8 +58,12 @@ class CallIntelligenceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    account_id: int | None = None
+    account_name: str | None = None  # Computed field from joined account
     company_name: str | None = None
     executive_name: str | None = None
+    audio_file_url: str | None = None
+    call_date: datetime | None = None
     transcript: str | None = None
     sentiment_score: float | None = None
     competitor_mentions: list[str] | None = None

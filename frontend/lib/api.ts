@@ -532,9 +532,13 @@ export interface KeyPointSuggestResult {
 }
 
 export interface CallIntelligence {
+    account_id?: number;
+    account_name?: string;
   id: number;
   company_name?: string;
   executive_name?: string;
+    audio_file_url?: string;
+    call_date?: string;
   transcript?: string;
   sentiment_score?: number;
   competitor_mentions?: string[];
@@ -580,18 +584,33 @@ export const tenderApi = {
 // ── Calls API ──────────────────────────────────────────────────────────────
 
 export const callsApi = {
-  analyse: (data: { company_name?: string; executive_name?: string; transcript: string }) => {
+  analyse: (data: { 
+    company_name?: string; 
+    executive_name?: string; 
+    transcript?: string; 
+    account_id?: number;
+    call_date?: string;
+    file?: File;
+  }) => {
     const form = new FormData();
     if (data.company_name) form.append('company_name', data.company_name);
     if (data.executive_name) form.append('executive_name', data.executive_name);
-    form.append('transcript', data.transcript);
+    if (data.transcript) form.append('transcript', data.transcript);
+    if (data.account_id) form.append('account_id', data.account_id.toString());
+    if (data.call_date) form.append('call_date', data.call_date);
+    if (data.file) form.append('file', data.file);
     return fetch(`${BASE_URL}/calls/analyse`, { method: 'POST', body: form }).then(async (res) => {
       if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
       return res.json() as Promise<CallIntelligence>;
     });
   },
-  list: (company_name?: string) =>
-    request<CallIntelligence[]>(`/calls${company_name ? `?company_name=${encodeURIComponent(company_name)}` : ''}`),
+  list: (filters?: { company_name?: string; account_id?: number }) => {
+    const params = new URLSearchParams();
+    if (filters?.company_name) params.append('company_name', filters.company_name);
+    if (filters?.account_id !== undefined) params.append('account_id', filters.account_id.toString());
+    const query = params.toString();
+    return request<CallIntelligence[]>(`/calls${query ? `?${query}` : ''}`);
+  },
   get: (id: number) => request<CallIntelligence>(`/calls/${id}`),
   delete: (id: number) => request<void>(`/calls/${id}`, { method: 'DELETE' }),
   suggestKeyPointLinks: (callId: number, pointIndex: number) =>

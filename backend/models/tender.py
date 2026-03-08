@@ -3,9 +3,9 @@
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, DateTime, Float, Integer, Numeric, String, Text, func,
+    Boolean, DateTime, Float, ForeignKey, Integer, Numeric, String, Text, func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
 
@@ -40,8 +40,13 @@ class CallIntelligence(Base):
     __tablename__ = "call_intelligence"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    account_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     company_name: Mapped[str | None] = mapped_column(String(500))
     executive_name: Mapped[str | None] = mapped_column(String(255))
+    audio_file_url: Mapped[str | None] = mapped_column(String(2048))
+    call_date: Mapped[datetime | None] = mapped_column(DateTime)
     transcript: Mapped[str | None] = mapped_column(Text)
     sentiment_score: Mapped[float | None] = mapped_column(Float)
     competitor_mentions: Mapped[str | None] = mapped_column(Text)  # JSON array string
@@ -54,3 +59,5 @@ class CallIntelligence(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )
+
+    account: Mapped["Account"] = relationship("Account", back_populates="call_intelligence_records")

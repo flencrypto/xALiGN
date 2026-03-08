@@ -2,9 +2,13 @@
 
 import json
 import logging
+import os
+import uuid
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
+from pathlib import Path
 
+import aiofiles
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 
@@ -23,6 +27,7 @@ _call_intel_worker = CallIntelWorker()
 
 _AUDIO_ALLOWED_TYPES = {"audio/mpeg", "audio/mp3", "audio/wav", "audio/x-m4a", "audio/m4a", "audio/ogg"}
 _AUDIO_MAX_BYTES = 50 * 1024 * 1024  # 50 MB
+_AUDIO_DIR = Path(os.getenv("UPLOAD_DIR", "./uploads")) / "audio"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -50,8 +55,12 @@ def _serialise_next_steps(value) -> str | None:
 def _call_to_read(obj: CallIntelligence) -> CallIntelligenceRead:
     return CallIntelligenceRead(
         id=obj.id,
+        account_id=obj.account_id,
+        account_name=obj.account.name if obj.account else None,
         company_name=obj.company_name,
         executive_name=obj.executive_name,
+        audio_file_url=obj.audio_file_url,
+        call_date=obj.call_date,
         transcript=obj.transcript,
         sentiment_score=obj.sentiment_score,
         competitor_mentions=_load_list(obj.competitor_mentions),
@@ -126,17 +135,35 @@ async def analyse_call(
     company_name: str | None = Form(None),
     executive_name: str | None = Form(None),
     transcript: str | None = Form(None),
+    account_id: int | None = Form(None),
+    call_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
     """Full pipeline: audio transcription → Grok analysis → key points extraction → structured record."""
 
     # ── 1. Get transcript (audio or text) ─────────────────────────────────
+    audio_file_url: str | None = None
+    
     if file:
         if file.content_type not in _AUDIO_ALLOWED_TYPES:
             raise HTTPException(415, f"Unsupported audio type: {file.content_type}. Use mp3/wav/m4a.")
         audio_data = await file.read()
         if len(audio_data) > _AUDIO_MAX_BYTES:
             raise HTTPException(413, "Audio file too large (max 50 MB)")
+        
+        # Save audio file to disk
+        _AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+        ext = Path(file.filename or "call.mp3").suffix.lower()
+        if ext not in {".mp3", ".wav", ".m4a", ".ogg"}:
+            ext = ".mp3"
+        safe_filename = f"{uuid.uuid4().hex}{ext}"
+        dest = _AUDIO_DIR / safe_filename
+        
+        async with aiofiles.open(dest, "wb") as f:
+            await f.write(audio_data)
+        
+        audio_file_url = f"/uploads/audio/{safe_filename}"
+        
         logger.info(f"Transcribing audio file: {file.filename} ({len(audio_data)/1024/1024:.1f} MB)")
         transcript_text = await _call_intel_worker.transcribe_audio(audio_data, file.filename or "call")
     elif transcript and transcript.strip():
@@ -150,11 +177,22 @@ async def analyse_call(
     # ── 2. Run full Grok analysis + key points extraction ─────────────────
     logger.info(f"Running Grok analysis on {len(transcript_text)} characters")
     signals = await _call_intel_worker.run(transcript_text)
+    # Parse call_date if provided
+    call_datetime: datetime | None = None
+    if call_date:
+        try:
+            call_datetime = datetime.fromisoformat(call_date.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            logger.warning(f"Invalid call_date format: {call_date}")
+    
 
     # ── 3. Save to database ───────────────────────────────────────────────
     obj = CallIntelligence(
+        account_id=account_id,
         company_name=company_name,
         executive_name=executive_name,
+        audio_file_url=audio_file_url,
+        call_date=call_datetime,
         transcript=transcript_text,
         sentiment_score=signals.get("sentiment_score"),
         competitor_mentions=json.dumps(signals.get("competitor_mentions") or []),
@@ -361,6 +399,7 @@ async def link_key_point(
 @router.get("", response_model=list[CallIntelligenceRead])
 def list_calls(
     company_name: str | None = None,
+        account_id: int | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -368,6 +407,8 @@ def list_calls(
     q = db.query(CallIntelligence).order_by(CallIntelligence.created_at.desc())
     if company_name:
         q = q.filter(CallIntelligence.company_name.ilike(f"%{company_name}%"))
+        if account_id is not None:
+            q = q.filter(CallIntelligence.account_id == account_id)
     return [_call_to_read(obj) for obj in q.offset(skip).limit(limit).all()]
 
 

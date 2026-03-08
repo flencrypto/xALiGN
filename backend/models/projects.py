@@ -70,7 +70,9 @@ class InfrastructureProject(Base):
         Enum(ProjectStage), default=ProjectStage.announced, server_default="announced"
     )
     project_type: Mapped[ProjectType] = mapped_column(
-        Enum(ProjectType), default=ProjectType.general, server_default="general"
+        Enum(ProjectType, name="infrastructure_project_type"),
+        default=ProjectType.general,
+        server_default="general",
     )
     partners: Mapped[str | None] = mapped_column(Text)  # JSON list of partner names
     source_url: Mapped[str | None] = mapped_column(String(2048))

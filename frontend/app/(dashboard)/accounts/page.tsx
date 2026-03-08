@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Header from '@/components/layout/Header';
 import WebsiteSwoop from '@/components/WebsiteSwoop';
-import { accountsApi, accountsCsvApi, Account, Contact, TriggerSignal, CsvImportResult } from '@/lib/api';
+import { accountsApi, accountsCsvApi, callsApi, Account, Contact, TriggerSignal, CallIntelligence, CsvImportResult } from '@/lib/api';
 
 const ACCOUNT_TYPES = ['All', 'operator', 'hyperscaler', 'developer', 'colo', 'enterprise'];
 
@@ -53,6 +53,7 @@ export default function AccountsPage() {
   const [selected, setSelected] = useState<Account | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [signals, setSignals] = useState<TriggerSignal[]>([]);
+    const [calls, setCalls] = useState<CallIntelligence[]>([]);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [showNewContact, setShowNewContact] = useState(false);
   const [showNewSignal, setShowNewSignal] = useState(false);
@@ -70,12 +71,14 @@ export default function AccountsPage() {
 
   async function selectAccount(acc: Account) {
     setSelected(acc);
-    const [c, s] = await Promise.all([
+    const [c, s, calls] = await Promise.all([
       accountsApi.listContacts(acc.id).catch(() => []),
       accountsApi.listTriggerSignals(acc.id).catch(() => []),
+      callsApi.list({ account_id: acc.id }).catch(() => []),
     ]);
     setContacts(c);
     setSignals(s);
+    setCalls(calls);
   }
 
   async function handleCreateAccount(e: React.FormEvent) {
@@ -199,6 +202,68 @@ export default function AccountsPage() {
               {csvResult.errors.map((e, i) => <li key={i}>{e}</li>)}
             </ul>
           )}
+                    {/* Calls */}
+                    <div className="mb-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-text-main text-sm font-semibold">Calls ({calls.length})</h3>
+                        <a 
+                          href="/calls" 
+                          className="text-primary hover:text-primary text-xs"
+                        >
+                          View All →
+                        </a>
+                      </div>
+                      {calls.length === 0 ? (
+                        <p className="text-text-faint text-xs">No call records yet.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {calls.map((call) => {
+                            const sentimentColor = 
+                              call.sentiment_score == null ? 'text-text-muted' :
+                              call.sentiment_score >= 0.5 ? 'text-emerald-400' :
+                              call.sentiment_score >= 0 ? 'text-primary' :
+                              call.sentiment_score >= -0.5 ? 'text-amber-400' : 'text-danger';
+                    
+                            return (
+                              <li key={call.id} className="bg-surface/50 rounded-lg px-3 py-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    {call.executive_name && (
+                                      <p className="text-text-main text-sm font-medium truncate">{call.executive_name}</p>
+                                    )}
+                                    <p className="text-text-muted text-xs">
+                                      {call.call_date 
+                                        ? new Date(call.call_date).toLocaleDateString()
+                                        : call.created_at 
+                                        ? new Date(call.created_at).toLocaleDateString()
+                                        : 'No date'}
+                                    </p>
+                                    {call.key_points && call.key_points.length > 0 && (
+                                      <p className="text-text-faint text-xs mt-1">
+                                        {call.key_points.length} key point{call.key_points.length > 1 ? 's' : ''}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {call.sentiment_score != null && (
+                                    <span className={`text-xs font-medium ${sentimentColor}`}>
+                                      {call.sentiment_score > 0 ? '+' : ''}{call.sentiment_score.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                                {call.audio_file_url && (
+                                  <div className="mt-2">
+                                    <audio controls className="w-full h-8" style={{ maxHeight: '32px' }}>
+                                      <source src={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${call.audio_file_url}`} />
+                                    </audio>
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+
         </div>
       )}
 

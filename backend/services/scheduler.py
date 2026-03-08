@@ -85,5 +85,24 @@ def setup_scheduler(app) -> None:  # noqa: ARG001  (app reserved for future use)
         replace_existing=True,
     )
 
+    # Daily briefing ingestion (runs at 07:30 UTC)
+    from backend.services.briefing_ingestion import run_daily_briefing_ingestion
+
+    def _briefing_job():
+        """Run the daily briefing ingestion task."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
+        
+        loop.create_task(run_daily_briefing_ingestion())
+
+    scheduler.add_job(
+        _briefing_job,
+        CronTrigger(hour="7", minute="30"),
+        id="daily_briefing_ingestion",
+        replace_existing=True,
+    )
+
     scheduler.start()
-    logger.info("Intelligence collection scheduler started with 5 jobs.")
+    logger.info("Intelligence collection scheduler started with 6 jobs (including daily briefing).")

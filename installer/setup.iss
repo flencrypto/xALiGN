@@ -46,31 +46,41 @@ WelcomeLabel2=This will install [name/ver] on your computer.%n%naLiGN is an AI-n
 Source: "..\docker-compose.yml";         DestDir: "{app}";                        Flags: ignoreversion
 Source: "..\.env.example";               DestDir: "{app}";                        Flags: ignoreversion
 
-; Backend – exclude virtual-env, cache and compiled artefacts
-Source: "..\ackend\*";                  DestDir: "{app}\backend";                Flags: ignoreversion recursesubdirs createallsubdirs
+; Backend – excluding virtual-env, cache, compiled artefacts, and .git via Excludes
+Source: "..\backend\*";                  DestDir: "{app}\backend";                Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.pyc,__pycache__\*,.git\*"
 
-; Frontend – exclude node_modules and build output
-Source: "..\rontend\*";                 DestDir: "{app}\frontend";               Flags: ignoreversion recursesubdirs createallsubdirs
+; Frontend – excluding node_modules, build output, and .git via Excludes
+Source: "..\frontend\*";                 DestDir: "{app}\frontend";               Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "node_modules\*,.next\*,.git\*"
 
 ; Helper scripts (placed directly in the install root for easy access)
 Source: "scripts\start.bat";             DestDir: "{app}";                        Flags: ignoreversion
 Source: "scripts\stop.bat";              DestDir: "{app}";                        Flags: ignoreversion
 Source: "scripts\open-browser.bat";      DestDir: "{app}";                        Flags: ignoreversion
 
+; Backend helper scripts (for Gmail OAuth and notifications)
+Source: "..\backend\setup-gmail-oauth.bat"; DestDir: "{app}\backend";            Flags: ignoreversion
+Source: "..\backend\test-notifications.bat"; DestDir: "{app}\backend";           Flags: ignoreversion
+
 ; ---- Start Menu shortcuts --------------------------------------------------
 [Icons]
 Name: "{group}\Start aLiGN";            Filename: "{app}\start.bat";             WorkingDir: "{app}"; Comment: "Build and start the aLiGN services"
 Name: "{group}\Stop aLiGN";             Filename: "{app}\stop.bat";              WorkingDir: "{app}"; Comment: "Stop the aLiGN services"
 Name: "{group}\Open aLiGN in Browser";  Filename: "{app}\open-browser.bat";      WorkingDir: "{app}"; Comment: "Open aLiGN at http://localhost:3000"
+Name: "{group}\Setup Gmail OAuth";     Filename: "{app}\backend\setup-gmail-oauth.bat"; WorkingDir: "{app}\backend"; Comment: "Configure Gmail OAuth for automatic briefing fetch"
+Name: "{group}\Test Notifications";    Filename: "{app}\backend\test-notifications.bat"; WorkingDir: "{app}\backend"; Comment: "Test fallback notification system"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 
-; Desktop shortcut – opens the browser
+; Desktop shortcuts
 Name: "{autodesktop}\aLiGN";            Filename: "{app}\open-browser.bat";      WorkingDir: "{app}"; Comment: "Open aLiGN in your browser"
+Name: "{autodesktop}\aLiGN Gmail Setup"; Filename: "{app}\backend\setup-gmail-oauth.bat"; WorkingDir: "{app}\backend"; Comment: "Gmail OAuth Setup Wizard"; Tasks: desktopgmailsetup
 
+; ---- Optional tasks --------------------------------------------------------
+[Tasks]
+Name: "desktopgmailsetup"; Description: "Create desktop shortcut for Gmail OAuth Setup"; GroupDescription: "Additional shortcuts:"
 ; ---- Post-install actions --------------------------------------------------
 [Run]
 ; Auto-start the aLiGN services immediately after installation
-Filename: "{app}\start.bat"; Description: ""; Flags: runhidden
+Filename: "{app}\start.bat"; Description: ""; Flags: runhidden nowait
 ; Open the browser after services are running
 Filename: "{app}\open-browser.bat"; Description: "Open aLiGN in browser now"; Flags: postinstall skipifsilent nowait
 
@@ -152,13 +162,11 @@ end;
 { -----------------------------------------------------------------------
   CurStepChanged – create .env from .env.example after files are
   installed, but only if .env does not already exist (idempotent).
-  Automatically schedule startup on first install.
   ----------------------------------------------------------------------- }
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   EnvExample : String;
   EnvDest    : String;
-  StartupDir : String;
 begin
   if CurStep = ssPostInstall then
   begin
@@ -167,6 +175,6 @@ begin
 
     { Create .env from .env.example on first install }
     if FileExists(EnvExample) and not FileExists(EnvDest) then
-      FileCopy(EnvExample, EnvDest, False);
+      CopyFile(EnvExample, EnvDest, False);
   end;
 end;

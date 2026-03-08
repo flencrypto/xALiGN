@@ -76,6 +76,9 @@ class Account(Base):
     opportunities: Mapped[list] = relationship(
         "Opportunity", back_populates="account", cascade="all, delete-orphan"
     )
+    call_intelligence_records: Mapped[list] = relationship(
+        "CallIntelligence", back_populates="account"
+    )
 
 
 class Contact(Base):

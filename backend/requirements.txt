@@ -34,3 +34,8 @@ apscheduler==3.10.4
 
 # Data Processing Layer (BATCH 2)
 rapidfuzz==3.9.3
+
+# Gmail Integration (for auto-fetching briefings)
+google-auth==2.29.0
+google-auth-oauthlib==1.2.0
+google-api-python-client==2.122.0
