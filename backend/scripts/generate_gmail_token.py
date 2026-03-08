@@ -99,7 +99,6 @@ def main():
     print("✅ SUCCESS! Copy these to your aLiGN/.env file:")
     print("="*70 + "\n")
     print(f"GOOGLE_CLIENT_ID={creds.client_id}")
-    print(f"GOOGLE_CLIENT_SECRET={creds.client_secret}")
     print(f"GOOGLE_REFRESH_TOKEN={creds.refresh_token}")
     print("\n" + "="*70)
     print("\n⚠️  SECURITY NOTES:")
@@ -108,10 +107,11 @@ def main():
     print("  • Refresh token grants access to your Gmail")
     print("  • .env is already in .gitignore (safe)")
     print("\n✅ NEXT STEPS:")
-    print("  1. Copy the 3 GOOGLE_* variables above")
-    print("  2. Paste into backend/.env (or aLiGN/.env)")
-    print("  3. Restart your backend: docker-compose restart backend")
-    print("  4. Test: POST http://localhost:8000/api/v1/briefing/ingest/test")
+    print("  1. Copy the GOOGLE_CLIENT_ID and GOOGLE_REFRESH_TOKEN values above")
+    print("  2. Copy GOOGLE_CLIENT_SECRET from your client_secret.json file")
+    print("  3. Paste all 3 values into backend/.env (or aLiGN/.env)")
+    print("  4. Restart your backend: docker-compose restart backend")
+    print("  5. Test: POST http://localhost:8000/api/v1/briefing/ingest/test")
     print("\n" + "="*70 + "\n")
 
 
