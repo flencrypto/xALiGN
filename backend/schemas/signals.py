@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from backend.models.intel import SignalEventStatus, SignalEventType
 
@@ -57,6 +57,15 @@ class ExpansionScoreRequest(BaseModel):
     hiring_count: int = Field(0, ge=0, description="Number of recent job postings detected")
     new_office_openings: int = Field(0, ge=0, description="Number of new office/facility openings")
     recent_acquisitions: int = Field(0, ge=0, description="Number of recent acquisitions")
+
+    @model_validator(mode="after")
+    def check_lists_same_length(self) -> "ExpansionScoreRequest":
+        if len(self.signal_events) != len(self.days_since_events):
+            raise ValueError(
+                "signal_events and days_since_events must have the same length "
+                f"(got {len(self.signal_events)} and {len(self.days_since_events)})"
+            )
+        return self
 
 
 class ExpansionScoreResult(BaseModel):

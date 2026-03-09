@@ -1,0 +1,412 @@
+// Prisma schema for aLiGN
+// Mirrors the SQLAlchemy models in backend/models/
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Accounts ──────────────────────────────────────────────────────────────────
+
+model Account {
+  id             Int      @id @default(autoincrement())
+  name           String
+  // Valid values: operator, hyperscaler, developer, colo, enterprise
+  type           String   @default("enterprise")
+  stage          String?
+  tier_target    String?
+  location       String?
+  website        String?
+  logo_url       String?
+  tags           String?
+  notes          String?
+  annual_revenue Float?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  contacts              Contact[]
+  trigger_signals       TriggerSignal[]
+  opportunities         Opportunity[]
+  call_intelligence_records CallIntelligence[]
+  signal_events         SignalEvent[]
+}
+
+model Contact {
+  id              Int     @id @default(autoincrement())
+  account_id      Int
+  name            String
+  role            String?
+  email           String?
+  phone           String?
+  influence_level String?
+  notes           String?
+
+  account Account @relation(fields: [account_id], references: [id], onDelete: Cascade)
+}
+
+model TriggerSignal {
+  id          Int      @id @default(autoincrement())
+  account_id  Int
+  signal_type String
+  title       String
+  description String?
+  source_url  String?
+  detected_at DateTime @default(now())
+  status      String   @default("new")
+
+  account Account @relation(fields: [account_id], references: [id], onDelete: Cascade)
+}
+
+// ── Opportunities & Bids ──────────────────────────────────────────────────────
+
+model Opportunity {
+  id              Int      @id @default(autoincrement())
+  account_id      Int
+  title           String
+  description     String?
+  stage           String   @default("target")
+  estimated_value Float?
+  currency        String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  account             Account              @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  qualification_scores QualificationScore[]
+  bids                Bid[]
+}
+
+model QualificationScore {
+  id                         Int      @id @default(autoincrement())
+  opportunity_id             Int
+  budget_confidence          Float?
+  route_to_market_clarity    Float?
+  incumbent_lock_in_risk     Float?
+  procurement_timeline_realism Float?
+  technical_fit              Float?
+  tier_level                 Int?
+  uptime_target              Float?
+  mep_complexity             String?
+  live_environment           Boolean?
+  overall_score              Float?
+  go_no_go                   String?
+  rationale                  String?
+  scored_at                  DateTime @default(now())
+
+  opportunity Opportunity @relation(fields: [opportunity_id], references: [id], onDelete: Cascade)
+}
+
+model Bid {
+  id              Int      @id @default(autoincrement())
+  opportunity_id  Int
+  title           String
+  tender_ref      String?
+  submission_date DateTime?
+  status          String   @default("draft")
+  win_themes      String?
+  notes           String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  opportunity       Opportunity         @relation(fields: [opportunity_id], references: [id], onDelete: Cascade)
+  documents         BidDocument[]
+  compliance_items  ComplianceItem[]
+  rfis              RFI[]
+  estimating_projects EstimatingProject[]
+  debrief           BidDebrief?
+}
+
+model BidDocument {
+  id                    Int      @id @default(autoincrement())
+  bid_id                Int
+  filename              String
+  doc_type              String
+  content_text          String?
+  extracted_requirements String?
+  uploaded_at           DateTime @default(now())
+
+  bid Bid @relation(fields: [bid_id], references: [id], onDelete: Cascade)
+}
+
+model ComplianceItem {
+  id                Int     @id @default(autoincrement())
+  bid_id            Int
+  requirement       String
+  category          String?
+  compliance_status String  @default("tbc")
+  evidence          String?
+  owner             String?
+  notes             String?
+
+  bid Bid @relation(fields: [bid_id], references: [id], onDelete: Cascade)
+}
+
+model RFI {
+  id           Int       @id @default(autoincrement())
+  bid_id       Int
+  question     String
+  category     String?
+  priority     String    @default("medium")
+  status       String    @default("draft")
+  answer       String?
+  submitted_at DateTime?
+  answered_at  DateTime?
+
+  bid Bid @relation(fields: [bid_id], references: [id], onDelete: Cascade)
+}
+
+model BidDebrief {
+  id                  Int       @id @default(autoincrement())
+  bid_id              Int       @unique
+  outcome             String?
+  our_score           Float?
+  winner_score        Float?
+  our_price           Float?
+  winner_price        Float?
+  evaluation_criteria String?
+  client_feedback     String?
+  strengths           String?
+  weaknesses          String?
+  winning_company     String?
+  lessons_learned     String?
+  process_improvements String?
+  bid_manager         String?
+  debrief_date        DateTime?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  bid Bid @relation(fields: [bid_id], references: [id], onDelete: Cascade)
+}
+
+// ── Estimating ────────────────────────────────────────────────────────────────
+
+model EstimatingProject {
+  id              Int      @id @default(autoincrement())
+  bid_id          Int
+  project_type    String?
+  tier_level      Int?
+  total_budget    Float?
+  contingency_pct Float?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  bid             Bid             @relation(fields: [bid_id], references: [id], onDelete: Cascade)
+  scope_gap_items ScopeGapItem[]
+  checklist_items ChecklistItem[]
+}
+
+model ScopeGapItem {
+  id               Int     @id @default(autoincrement())
+  project_id       Int
+  category         String?
+  description      String
+  identified       Boolean @default(false)
+  owner_agreed     Boolean @default(false)
+  included_in_price Boolean @default(false)
+  notes            String?
+
+  project EstimatingProject @relation(fields: [project_id], references: [id], onDelete: Cascade)
+}
+
+model ChecklistItem {
+  id         Int     @id @default(autoincrement())
+  project_id Int
+  category   String?
+  item       String
+  completed  Boolean @default(false)
+  notes      String?
+
+  project EstimatingProject @relation(fields: [project_id], references: [id], onDelete: Cascade)
+}
+
+// ── Frameworks ────────────────────────────────────────────────────────────────
+
+model ProcurementFramework {
+  id               Int      @id @default(autoincrement())
+  name             String
+  managing_body    String?
+  framework_ref    String?
+  category         String?
+  start_date       DateTime?
+  expiry_date      DateTime?
+  value_gbp        Float?
+  lots             String?
+  eligible_regions String?
+  source_url       String?
+  notes            String?
+  created_at       DateTime @default(now())
+}
+
+// ── Tender Awards & Call Intelligence ────────────────────────────────────────
+
+model TenderAward {
+  id                Int      @id @default(autoincrement())
+  authority_name    String
+  winning_company   String
+  contract_value    Float?
+  contract_currency String?
+  scope_summary     String?
+  cpv_codes         String?
+  award_date        String?
+  duration_months   Int?
+  source_url        String?
+  framework         Boolean  @default(false)
+  region            String?
+  competitors       String?
+  mw_capacity       Float?
+  created_at        DateTime @default(now())
+}
+
+model CallIntelligence {
+  id                   Int       @id @default(autoincrement())
+  account_id           Int?
+  company_name         String?
+  executive_name       String?
+  audio_file_url       String?
+  call_date            DateTime?
+  transcript           String?
+  sentiment_score      Float?
+  competitor_mentions  String?
+  budget_signals       String?
+  timeline_mentions    String?
+  risk_language        String?
+  objection_categories String?
+  next_steps           String?
+  key_points           String?
+  created_at           DateTime  @default(now())
+
+  account Account? @relation(fields: [account_id], references: [id], onDelete: SetNull)
+}
+
+// ── Company Intelligence ──────────────────────────────────────────────────────
+
+model CompanyIntel {
+  id                    Int      @id @default(autoincrement())
+  website               String
+  company_name          String?
+  business_model        String?
+  locations             String?
+  expansion_signals     String?
+  technology_indicators String?
+  financial_summary     String?
+  earnings_highlights   String?
+  competitor_mentions   String?
+  strategic_risks       String?
+  bid_opportunities     String?
+  stock_ticker          String?
+  stock_price           String?
+  linkedin_posts        String?
+  x_posts               String?
+  raw_response          String?
+  created_at            DateTime @default(now())
+
+  executives  ExecutiveProfile[]
+  news_items  NewsItem[]
+  blog_posts  BlogPost[]
+}
+
+model ExecutiveProfile {
+  id                     Int      @id @default(autoincrement())
+  company_intel_id       Int
+  name                   String
+  role                   String?
+  professional_focus     String?
+  public_interests       String?
+  recent_interviews      String?
+  conference_appearances String?
+  charity_involvement    String?
+  communication_style    String?
+  conversation_angles    String?
+  created_at             DateTime @default(now())
+
+  company_intel CompanyIntel @relation(fields: [company_intel_id], references: [id], onDelete: Cascade)
+}
+
+model NewsItem {
+  id               Int      @id @default(autoincrement())
+  company_intel_id Int?
+  title            String
+  summary          String?
+  source_url       String?
+  category         String   @default("general")
+  company_name     String?
+  published_at     String?
+  detected_at      DateTime @default(now())
+
+  company_intel CompanyIntel? @relation(fields: [company_intel_id], references: [id], onDelete: Cascade)
+}
+
+model BlogPost {
+  id               Int       @id @default(autoincrement())
+  company_intel_id Int?
+  title            String
+  slug             String    @unique
+  body_markdown    String
+  meta_description String?
+  seo_keywords     String?
+  linkedin_variant String?
+  x_variant        String?
+  status           String    @default("draft")
+  published_at     DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  company_intel CompanyIntel? @relation(fields: [company_intel_id], references: [id], onDelete: SetNull)
+}
+
+model UploadedPhoto {
+  id                Int      @id @default(autoincrement())
+  filename          String
+  original_filename String
+  storage_path      String
+  content_type      String?
+  size_bytes        Int?
+  alt_text          String?
+  ai_description    String?
+  company_intel_id  Int?
+  bid_id            Int?
+  uploaded_at       DateTime @default(now())
+}
+
+// ── Signal Events (our PR addition) ──────────────────────────────────────────
+
+model SignalEvent {
+  id              Int       @id @default(autoincrement())
+  company_name    String
+  account_id      Int?
+  event_type      String    @default("general")
+  title           String
+  description     String?
+  source_url      String?
+  relevance_score Float?
+  status          String    @default("active")
+  event_date      DateTime?
+  detected_at     DateTime  @default(now())
+
+  account Account? @relation(fields: [account_id], references: [id], onDelete: SetNull)
+}
+
+// ── Lead Times ────────────────────────────────────────────────────────────────
+
+model LeadTimeItem {
+  id               Int      @id @default(autoincrement())
+  category         String
+  item_description String
+  lead_time_weeks  Int?
+  notes            String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+
+model UserSettings {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  value      String?
+  updated_at DateTime @updatedAt
+}

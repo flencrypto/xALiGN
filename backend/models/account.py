@@ -79,6 +79,9 @@ class Account(Base):
     call_intelligence_records: Mapped[list] = relationship(
         "CallIntelligence", back_populates="account"
     )
+    signal_events: Mapped[list] = relationship(
+        "SignalEvent", back_populates="account"
+    )
 
 
 class Contact(Base):

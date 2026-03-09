@@ -144,22 +144,18 @@ def compute_expansion_score(payload: ExpansionScoreRequest):
 
     EAS = 0.50 * signal_score + 0.25 * hiring_score + 0.25 * physical_score
     """
-    # Compute timing once and derive both EAS and breakdown from it
-    timing = scoring.compute_relationship_timing(
-        payload.signal_events, payload.days_since_events
+    result = scoring.compute_expansion_activity_score(
+        signal_events=payload.signal_events,
+        days_since_events=payload.days_since_events,
+        hiring_count=payload.hiring_count,
+        new_office_openings=payload.new_office_openings,
+        recent_acquisitions=payload.recent_acquisitions,
     )
-    signal_contribution = round(timing["timing_score"] * 0.50, 4)
-    hiring_contribution = round(min(payload.hiring_count / 50.0, 1.0) * 0.25, 4)
-    physical_contribution = round(
-        min((payload.new_office_openings + payload.recent_acquisitions) * 0.10, 1.0) * 0.25, 4
-    )
-
-    eas = round(min(max(signal_contribution + hiring_contribution + physical_contribution, 0.0), 1.0), 4)
 
     breakdown = {
-        "signal_contribution": signal_contribution,
-        "hiring_contribution": hiring_contribution,
-        "physical_contribution": physical_contribution,
+        "signal_contribution": result["signal_contribution"],
+        "hiring_contribution": result["hiring_contribution"],
+        "physical_contribution": result["physical_contribution"],
     }
 
-    return ExpansionScoreResult(expansion_activity_score=eas, breakdown=breakdown)
+    return ExpansionScoreResult(expansion_activity_score=result["score"], breakdown=breakdown)
