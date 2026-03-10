@@ -48,6 +48,45 @@ def _safe_filename(original: str) -> str:
     return f"{uuid.uuid4().hex}{ext}"
 
 
+def _resolve_upload_path(obj) -> Path | None:
+    """Safely resolve the on-disk path for an uploaded file record.
+
+    Strategy (in order):
+    1. If ``storage_path`` is set, resolve it and verify it remains within
+       ``_UPLOAD_DIR`` via ``Path.relative_to()``.  If valid *and* the file
+       exists, use it.  This preserves compatibility with existing records
+       while catching tampered paths.
+    2. Fall back to reconstructing the path from ``filename`` (the UUID-based
+       safe name stored at upload time) within the current ``_UPLOAD_DIR``.
+       This handles the case where ``UPLOAD_DIR`` has changed between writes
+       and reads, or where ``storage_path`` pointed outside the directory.
+
+    Returns the resolved ``Path`` if the file exists, otherwise ``None``.
+    """
+    upload_dir = _UPLOAD_DIR.resolve()
+
+    # Attempt 1: trust storage_path after containment check
+    if obj.storage_path:
+        try:
+            candidate = Path(obj.storage_path).resolve()
+            candidate.relative_to(upload_dir)  # raises ValueError if outside
+            if candidate.exists():
+                return candidate
+        except (ValueError, OSError):
+            pass
+
+    # Attempt 2: reconstruct from the safe filename
+    # Path.name strips all directory components (e.g. "../../etc/passwd" → "passwd"),
+    # so this is safe against path traversal in obj.filename.
+    safe_name = Path(obj.filename).name
+    fallback = (upload_dir / safe_name).resolve()
+    try:
+        fallback.relative_to(upload_dir)  # extra safety guard
+    except ValueError:
+        return None
+    return fallback if fallback.exists() else None
+
+
 @router.post(
     "/photos",
     response_model=UploadedPhotoRead,
@@ -150,11 +189,8 @@ def download_photo(photo_id: int, db: Session = Depends(get_db)):
     obj = db.get(UploadedPhoto, photo_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Photo not found")
-    # Resolve path via the safe filename only (Path.name strips any directory
-    # components), preventing path traversal through a tampered storage_path.
-    safe_name = Path(obj.filename).name
-    path = _UPLOAD_DIR / safe_name
-    if not path.exists():
+    path = _resolve_upload_path(obj)
+    if path is None:
         raise HTTPException(status_code=404, detail="File not found on disk")
     return FileResponse(
         path=str(path),
@@ -172,9 +208,8 @@ def delete_photo(photo_id: int, db: Session = Depends(get_db)):
     obj = db.get(UploadedPhoto, photo_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Photo not found")
-    safe_name = Path(obj.filename).name
-    path = _UPLOAD_DIR / safe_name
-    if path.exists():
+    path = _resolve_upload_path(obj)
+    if path is not None:
         try:
             path.unlink()
         except OSError as exc:

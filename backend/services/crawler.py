@@ -10,7 +10,10 @@ import re
 import socket
 from urllib.parse import urlparse
 
+import httpcore
 import httpx
+from httpcore._backends.auto import AutoBackend
+from httpcore._backends.base import AsyncNetworkStream
 
 logger = logging.getLogger("align.crawler")
 
@@ -37,8 +40,18 @@ _PRIVATE_NETWORKS = [
 
 
 def _is_private_ip(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    """Return True if the address belongs to a private, loopback, link-local, or reserved range."""
-    if addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_multicast:
+    """Return True if the address is not a globally routable public address.
+
+    Covers loopback, link-local, site-local, private RFC-1918/RFC-4193,
+    multicast, reserved, and unspecified (0.0.0.0 / ::) ranges.
+    """
+    if (
+        addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_multicast
+        or addr.is_unspecified
+    ):
         return True
     for network in _PRIVATE_NETWORKS:
         if addr in network:
@@ -46,14 +59,16 @@ def _is_private_ip(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     return False
 
 
-def _validate_url(url: str) -> None:
-    """
-    Validate that the URL targets a public, external host.
+def _validate_url(url: str) -> list[str]:
+    """Validate that the URL targets a public, external host.
 
-    Raises ValueError for private/loopback addresses to prevent SSRF.
+    Raises ValueError for private/loopback/unspecified addresses to prevent SSRF.
 
     Uses ``socket.getaddrinfo`` to resolve hostnames so that DNS rebinding
     attacks and hostnames that alias private IPs are also blocked.
+
+    Returns the list of validated public IP address strings so callers can
+    pin connections to them and avoid a second DNS resolution.
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
@@ -74,6 +89,7 @@ def _validate_url(url: str) -> None:
         # If DNS resolution fails, block the request rather than allow it.
         raise ValueError(f"Could not resolve hostname {hostname!r}.")
 
+    valid_ips: list[str] = []
     for _family, _type, _proto, _canonname, sockaddr in results:
         ip_str = sockaddr[0]
         try:
@@ -84,6 +100,61 @@ def _validate_url(url: str) -> None:
             raise ValueError(
                 f"Requests to {hostname!r} are not allowed (resolves to private/reserved address {ip_str})."
             )
+        valid_ips.append(ip_str)
+
+    return valid_ips
+
+
+class _PinnedIPBackend(AutoBackend):
+    """Network backend that bypasses the OS DNS resolver for a specific hostname.
+
+    Connects directly to the pre-validated IP address, eliminating the TOCTOU
+    window between ``_validate_url()`` and the actual TCP connection.  The
+    original hostname is still used by httpcore for the TLS ``server_hostname``
+    (SNI) and certificate verification, so HTTPS works correctly.
+    """
+
+    def __init__(self, hostname: str, ip: str) -> None:
+        super().__init__()
+        self._hostname = hostname
+        self._pinned_ip = ip
+
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options=None,
+    ) -> AsyncNetworkStream:
+        # Replace the DNS-resolved hostname with our pre-validated IP so no
+        # further OS-level DNS lookup is performed.  httpcore derives the TLS
+        # server_hostname from self._origin.host (the original URL hostname),
+        # not from this host argument, so certificate verification is intact.
+        target = self._pinned_ip if host == self._hostname else host
+        return await super().connect_tcp(
+            target,
+            port,
+            timeout=timeout,
+            local_address=local_address,
+            socket_options=socket_options,
+        )
+
+
+class _PinnedTransport(httpx.AsyncHTTPTransport):
+    """httpx transport that pins TCP connections to a pre-validated IP address.
+
+    Eliminates DNS rebinding TOCTOU by replacing the connection pool's
+    network backend with ``_PinnedIPBackend``, which connects to a
+    pre-resolved IP without invoking the OS resolver again.
+    """
+
+    def __init__(self, hostname: str, ip: str) -> None:
+        # Bypass super().__init__() to avoid building an unused default pool;
+        # handle_async_request and aclose (both inherited) only touch self._pool.
+        self._pool = httpcore.AsyncConnectionPool(
+            network_backend=_PinnedIPBackend(hostname, ip),
+        )
 
 
 def _strip_html(html: str) -> str:
@@ -111,14 +182,21 @@ async def crawl_homepage(website: str) -> str:
     """Fetch and extract plain text from a company homepage."""
     url = _normalise_url(website)
     try:
-        _validate_url(url)
+        valid_ips = _validate_url(url)
     except ValueError as exc:
         logger.warning("Blocked crawl request: %s", exc)
         return ""
 
+    parsed = urlparse(url)
+    hostname = parsed.hostname or ""
+    if not valid_ips:
+        logger.warning("Blocked crawl request: no valid IPs resolved for %s", hostname)
+        return ""
+    transport = _PinnedTransport(hostname, valid_ips[0])
+
     try:
         async with httpx.AsyncClient(
-            timeout=_TIMEOUT, headers=_HEADERS, follow_redirects=True
+            transport=transport, timeout=_TIMEOUT, headers=_HEADERS, follow_redirects=True
         ) as client:
             resp = await client.get(url)
             resp.raise_for_status()
@@ -140,7 +218,7 @@ async def crawl_leadership_pages(website: str) -> str:
     """
     base = _normalise_url(website)
     try:
-        _validate_url(base)
+        valid_ips = _validate_url(base)
     except ValueError as exc:
         logger.warning("Blocked crawl request: %s", exc)
         return ""
@@ -150,10 +228,15 @@ async def crawl_leadership_pages(website: str) -> str:
     # to ensure no user-controlled path or query string is included
     safe_scheme = parsed.scheme if parsed.scheme in ("http", "https") else "https"
     safe_netloc = parsed.netloc
+    hostname = parsed.hostname or ""
+    if not valid_ips:
+        logger.warning("Blocked crawl request: no valid IPs resolved for %s", hostname)
+        return ""
+    transport = _PinnedTransport(hostname, valid_ips[0])
 
     combined = ""
     async with httpx.AsyncClient(
-        timeout=_TIMEOUT, headers=_HEADERS, follow_redirects=True
+        transport=transport, timeout=_TIMEOUT, headers=_HEADERS, follow_redirects=True
     ) as client:
         for path in _EXEC_PATHS:
             # path is from a hardcoded constant list; safe to append directly
@@ -169,3 +252,4 @@ async def crawl_leadership_pages(website: str) -> str:
                 continue
 
     return combined[:_MAX_TEXT_LEN]
+
