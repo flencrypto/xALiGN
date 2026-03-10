@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import Image from "next/image";
+import Link from "next/link";
+import AlignLogo from "@/components/layout/AlignLogo";
 
 interface NavItem {
   label: string;
@@ -16,8 +17,8 @@ export function CircuitSidebar({ items = [] }: CircuitSidebarProps) {
     <aside
       className={
         "relative flex h-screen w-72 flex-col overflow-hidden " +
-        "border-r border-[rgb(var(--color-primary)/0.30)] " +
-        "bg-[rgb(var(--color-background))] font-mono text-[rgb(var(--color-primary))]"
+        "border-r border-color-primary/30 " +
+        "bg-color-background font-mono text-color-primary"
       }
     >
       {/* vertical circuit line decoration */}
@@ -33,30 +34,20 @@ export function CircuitSidebar({ items = [] }: CircuitSidebarProps) {
 
       {/* logo */}
       <div className="relative z-10 flex items-center gap-3 px-6 py-8 mb-4">
-        <Image
-          src="/logos/xalign-transparent.png"
-          alt="xALiGN"
-          width={36}
-          height={36}
-          className="h-9 w-auto"
-          priority
-        />
-        <span className="neon-text text-base font-bold tracking-widest uppercase">
-          xALiGN
-        </span>
+        <AlignLogo compact />
       </div>
 
       {/* nav items */}
       <nav className="relative z-10 flex flex-col gap-1 px-3 flex-1 overflow-y-auto">
         {items.map((item) => (
-          <a
+          <Link
             key={item.href}
             href={item.href}
             className={
               "group flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm " +
-              "text-[rgb(var(--color-primary)/0.75)] " +
-              "hover:bg-[rgb(var(--color-primary)/0.08)] " +
-              "hover:text-[rgb(var(--color-primary))] " +
+              "text-color-primary/75 " +
+              "hover:bg-color-primary/8 " +
+              "hover:text-color-primary " +
               "hover:shadow-[0_0_12px_rgb(var(--color-primary)/0.20)] " +
               "transition-all duration-150"
             }
@@ -67,7 +58,7 @@ export function CircuitSidebar({ items = [] }: CircuitSidebarProps) {
               </span>
             )}
             <span className="truncate">{item.label}</span>
-          </a>
+          </Link>
         ))}
       </nav>
 

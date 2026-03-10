@@ -10,8 +10,8 @@ export function HoloCard({ children, className = "" }: HoloCardProps) {
     <div
       className={
         "relative overflow-hidden rounded-xl p-6 " +
-        "bg-[rgb(var(--color-background)/0.90)] backdrop-blur-xl " +
-        "border border-[rgb(var(--color-primary)/0.30)] " +
+        "bg-color-background/90 backdrop-blur-xl " +
+        "border border-color-primary/30 " +
         "shadow-[0_0_20px_rgb(var(--color-primary)/0.15)] " +
         className
       }
