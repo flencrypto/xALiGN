@@ -224,3 +224,5 @@ class SignalEvent(Base):
     detected_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )
+
+    account: Mapped["Account | None"] = relationship("Account", back_populates="signal_events")

@@ -269,7 +269,10 @@ export interface QualificationInput {
 // ── Opportunities ──────────────────────────────────────────────────────────
 
 export const opportunitiesApi = {
-  list: () => request<Opportunity[]>('/opportunities'),
+  list: (params?: { account_id?: number }) => {
+    const qs = params?.account_id !== undefined ? `?account_id=${params.account_id}` : '';
+    return request<Opportunity[]>(`/opportunities${qs}`);
+  },
   create: (data: Partial<Opportunity>) => request<Opportunity>('/opportunities', { method: 'POST', body: JSON.stringify(data) }),
   get: (id: number) => request<Opportunity>(`/opportunities/${id}`),
   update: (id: number, data: Partial<Opportunity>) => request<Opportunity>(`/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
@@ -281,7 +284,10 @@ export const opportunitiesApi = {
 // ── Bids ───────────────────────────────────────────────────────────────────
 
 export const bidsApi = {
-  list: () => request<Bid[]>('/bids'),
+  list: (params?: { opportunity_id?: number }) => {
+    const qs = params?.opportunity_id !== undefined ? `?opportunity_id=${params.opportunity_id}` : '';
+    return request<Bid[]>(`/bids${qs}`);
+  },
   create: (data: Partial<Bid>) => request<Bid>('/bids', { method: 'POST', body: JSON.stringify(data) }),
   get: (id: number) => request<Bid>(`/bids/${id}`),
   update: (id: number, data: Partial<Bid>) => request<Bid>(`/bids/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

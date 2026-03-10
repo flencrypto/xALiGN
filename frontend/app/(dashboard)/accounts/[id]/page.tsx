@@ -64,23 +64,28 @@ export default function AccountDetailPage() {
 
   useEffect(() => {
     async function load() {
+      if (isNaN(accountId)) {
+        setError('Invalid account ID');
+        setLoading(false);
+        return;
+      }
       try {
-        const [acc, cons, sigs, allOpps, allBids] = await Promise.all([
+        const [acc, cons, sigs, accOpps] = await Promise.all([
           accountsApi.get(accountId),
           accountsApi.listContacts(accountId).catch(() => []),
           accountsApi.listTriggerSignals(accountId).catch(() => []),
-          opportunitiesApi.list().catch(() => []),
-          bidsApi.list().catch(() => []),
+          opportunitiesApi.list({ account_id: accountId }).catch(() => []),
         ]);
         setAccount(acc);
         setContacts(cons);
         setSignals(sigs);
-        // Filter opps for this account
-        const accOpps = allOpps.filter((o) => o.account_id === accountId);
         setOpportunities(accOpps);
-        // Get bids related to account opportunities
-        const oppIds = new Set(accOpps.map((o) => o.id));
-        setBids(allBids.filter((b) => oppIds.has(b.opportunity_id)));
+        // Fetch bids filtered by each opportunity
+        const oppIds = accOpps.map((o) => o.id);
+        const bidArrays = await Promise.all(
+          oppIds.map((oppId) => bidsApi.list({ opportunity_id: oppId }).catch(() => []))
+        );
+        setBids(bidArrays.flat());
       } catch {
         setError('Failed to load account');
       } finally {
@@ -92,18 +97,26 @@ export default function AccountDetailPage() {
 
   async function handleAddContact() {
     if (!contactForm.name.trim()) return;
-    const c = await accountsApi.createContact(accountId, contactForm);
-    setContacts([...contacts, c]);
-    setContactForm({ name: '', role: '', email: '', phone: '' });
-    setShowContactModal(false);
+    try {
+      const c = await accountsApi.createContact(accountId, contactForm);
+      setContacts([...contacts, c]);
+      setContactForm({ name: '', role: '', email: '', phone: '' });
+      setShowContactModal(false);
+    } catch {
+      setError('Failed to add contact');
+    }
   }
 
   async function handleAddSignal() {
     if (!signalForm.title.trim()) return;
-    const s = await accountsApi.createTriggerSignal(accountId, signalForm);
-    setSignals([...signals, s]);
-    setSignalForm(DEFAULT_SIGNAL_FORM);
-    setShowSignalModal(false);
+    try {
+      const s = await accountsApi.createTriggerSignal(accountId, signalForm);
+      setSignals([...signals, s]);
+      setSignalForm(DEFAULT_SIGNAL_FORM);
+      setShowSignalModal(false);
+    } catch {
+      setError('Failed to add signal');
+    }
   }
 
   if (loading) {

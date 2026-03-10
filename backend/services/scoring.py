@@ -197,7 +197,7 @@ def compute_expansion_activity_score(
     hiring_count: int = 0,
     new_office_openings: int = 0,
     recent_acquisitions: int = 0,
-) -> float:
+) -> dict:
     """
     Compute a normalised Expansion Activity Score (EAS) in [0, 1].
 
@@ -206,18 +206,28 @@ def compute_expansion_activity_score(
       - Hiring velocity proxy (hiring_count clamped to 50)
       - Physical expansion indicators (office openings, acquisitions)
 
-    Returns a float in [0, 1].
+    Returns a dict with keys:
+      - ``score``: float in [0, 1]
+      - ``signal_contribution``: weighted signal timing component
+      - ``hiring_contribution``: weighted hiring component
+      - ``physical_contribution``: weighted physical expansion component
     """
     # Time-decayed signal contribution (reuse relationship timing logic)
     timing = compute_relationship_timing(signal_events, days_since_events)
-    signal_contribution = timing["timing_score"] * 0.50
+    signal_contribution = round(timing["timing_score"] * 0.50, 4)
 
     # Hiring contribution: 50+ roles ≈ maximum signal (cap at 1.0)
-    hiring_contribution = min(hiring_count / 50.0, 1.0) * 0.25
+    hiring_contribution = round(min(hiring_count / 50.0, 1.0) * 0.25, 4)
 
     # Physical expansion contribution: each opening/acquisition scores 0.1 (cap at 1.0)
     expansion_events = new_office_openings + recent_acquisitions
-    physical_contribution = min(expansion_events * 0.10, 1.0) * 0.25
+    physical_contribution = round(min(expansion_events * 0.10, 1.0) * 0.25, 4)
 
-    score = signal_contribution + hiring_contribution + physical_contribution
-    return round(min(max(score, 0.0), 1.0), 4)
+    score = round(min(max(signal_contribution + hiring_contribution + physical_contribution, 0.0), 1.0), 4)
+
+    return {
+        "score": score,
+        "signal_contribution": signal_contribution,
+        "hiring_contribution": hiring_contribution,
+        "physical_contribution": physical_contribution,
+    }
