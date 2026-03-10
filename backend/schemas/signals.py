@@ -15,6 +15,9 @@ class SignalEventCreate(BaseModel):
     description: str | None = None
     source_url: str | None = Field(None, max_length=2048)
     relevance_score: float | None = Field(None, ge=0.0, le=1.0)
+    strength: float = Field(1.0, ge=0.0, le=10.0)
+    decay_factor: float = Field(0.05, ge=0.0, le=1.0)
+    company_intel_id: int | None = None
     status: SignalEventStatus = SignalEventStatus.active
     event_date: datetime | None = None
 
@@ -25,6 +28,9 @@ class SignalEventUpdate(BaseModel):
     description: str | None = None
     source_url: str | None = Field(None, max_length=2048)
     relevance_score: float | None = Field(None, ge=0.0, le=1.0)
+    strength: float | None = Field(None, ge=0.0, le=10.0)
+    decay_factor: float | None = Field(None, ge=0.0, le=1.0)
+    company_intel_id: int | None = None
     status: SignalEventStatus | None = None
     event_date: datetime | None = None
 
@@ -40,6 +46,9 @@ class SignalEventRead(BaseModel):
     description: str | None = None
     source_url: str | None = None
     relevance_score: float | None = None
+    strength: float
+    decay_factor: float
+    company_intel_id: int | None = None
     status: SignalEventStatus
     event_date: datetime | None = None
     detected_at: datetime
@@ -71,3 +80,11 @@ class ExpansionScoreRequest(BaseModel):
 class ExpansionScoreResult(BaseModel):
     expansion_activity_score: float
     breakdown: dict
+
+
+class RelationshipTimingResponse(BaseModel):
+    timing_score: float
+    recommend_contact: bool
+    strongest_signal: str | None = None
+    days_until_stale: int | None = None
+    explanation: str | None = None

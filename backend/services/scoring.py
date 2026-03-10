@@ -231,3 +231,49 @@ def compute_expansion_activity_score(
         "hiring_contribution": hiring_contribution,
         "physical_contribution": physical_contribution,
     }
+
+
+def expansion_activity_score(
+    capex_signals: int = 0,
+    regional_expansions: int = 0,
+    hiring_count: int = 0,
+    facility_changes: int = 0,
+    ai_indicators: int = 0,
+) -> dict:
+    """Weighted 0–10 expansion activity scorer.
+
+    Weights:
+      capex      30%
+      regions    20%
+      hiring     20%
+      facility   20%
+      AI         10%
+
+    Each dimension is normalised to [0, 1] before weighting, then the
+    composite is scaled to [0, 10].
+    """
+    capex_score = min(capex_signals / 5.0, 1.0)
+    region_score = min(regional_expansions / 10.0, 1.0)
+    hiring_score = min(hiring_count / 50.0, 1.0)
+    facility_score = min(facility_changes / 5.0, 1.0)
+    ai_score = min(ai_indicators / 10.0, 1.0)
+
+    composite = (
+        0.30 * capex_score
+        + 0.20 * region_score
+        + 0.20 * hiring_score
+        + 0.20 * facility_score
+        + 0.10 * ai_score
+    )
+    score_0_10 = round(composite * 10, 2)
+
+    return {
+        "score": score_0_10,
+        "breakdown": {
+            "capex_contribution": round(0.30 * capex_score * 10, 2),
+            "region_contribution": round(0.20 * region_score * 10, 2),
+            "hiring_contribution": round(0.20 * hiring_score * 10, 2),
+            "facility_contribution": round(0.20 * facility_score * 10, 2),
+            "ai_contribution": round(0.10 * ai_score * 10, 2),
+        },
+    }

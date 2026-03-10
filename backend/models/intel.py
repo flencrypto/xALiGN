@@ -83,6 +83,9 @@ class CompanyIntel(Base):
     blog_posts: Mapped[list["BlogPost"]] = relationship(
         "BlogPost", back_populates="company_intel", cascade="all, delete-orphan"
     )
+    signal_events: Mapped[list["SignalEvent"]] = relationship(
+        "SignalEvent", back_populates="company_intel", cascade="all, delete-orphan"
+    )
 
 
 class ExecutiveProfile(Base):
@@ -217,6 +220,11 @@ class SignalEvent(Base):
     description: Mapped[str | None] = mapped_column(Text)
     source_url: Mapped[str | None] = mapped_column(String(2048))
     relevance_score: Mapped[float | None] = mapped_column(Float)
+    strength: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    decay_factor: Mapped[float] = mapped_column(Float, nullable=False, default=0.05)
+    company_intel_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("company_intel.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     status: Mapped[SignalEventStatus] = mapped_column(
         Enum(SignalEventStatus), default=SignalEventStatus.active, server_default="active"
     )
@@ -226,3 +234,4 @@ class SignalEvent(Base):
     )
 
     account: Mapped["Account | None"] = relationship("Account", back_populates="signal_events")
+    company_intel: Mapped["CompanyIntel | None"] = relationship("CompanyIntel", back_populates="signal_events")

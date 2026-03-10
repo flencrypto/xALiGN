@@ -307,6 +307,7 @@ model CompanyIntel {
   executives  ExecutiveProfile[]
   news_items  NewsItem[]
   blog_posts  BlogPost[]
+  signal_events SignalEvent[]
 }
 
 model ExecutiveProfile {
@@ -375,19 +376,23 @@ model UploadedPhoto {
 // ── Signal Events (our PR addition) ──────────────────────────────────────────
 
 model SignalEvent {
-  id              Int       @id @default(autoincrement())
+  id              Int          @id @default(autoincrement())
   company_name    String
   account_id      Int?
-  event_type      String    @default("general")
+  company_intel_id Int?
+  event_type      String       @default("general")
   title           String
   description     String?
   source_url      String?
   relevance_score Float?
-  status          String    @default("active")
+  strength        Float        @default(1.0)
+  decay_factor    Float        @default(0.05)
+  status          String       @default("active")
   event_date      DateTime?
-  detected_at     DateTime  @default(now())
+  detected_at     DateTime     @default(now())
 
-  account Account? @relation(fields: [account_id], references: [id], onDelete: SetNull)
+  account      Account?      @relation(fields: [account_id], references: [id], onDelete: SetNull)
+  company_intel CompanyIntel? @relation(fields: [company_intel_id], references: [id], onDelete: SetNull)
 }
 
 // ── Lead Times ────────────────────────────────────────────────────────────────

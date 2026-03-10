@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: align-worker
+  labels:
+    app: align
+    tier: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: align
+      tier: worker
+  template:
+    metadata:
+      labels:
+        app: align
+        tier: worker
+    spec:
+      containers:
+        - name: worker
+          image: align-backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "backend.worker"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: align-secrets
+                  key: DATABASE_URL
+            - name: GROK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: align-secrets
+                  key: GROK_API_KEY
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /app/uploads
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: align-shared-pvc

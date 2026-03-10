@@ -4,7 +4,13 @@ metadata:
   name: align-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - align.example.com
+      secretName: align-tls-cert
   rules:
     - host: align.example.com
       http:

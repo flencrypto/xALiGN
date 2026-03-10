@@ -1058,6 +1058,9 @@ export interface SignalEvent {
   description?: string;
   source_url?: string;
   relevance_score?: number;
+  strength: number;
+  decay_factor: number;
+  company_intel_id?: number;
   status: string;
   event_date?: string;
   detected_at: string;
@@ -1074,6 +1077,14 @@ export interface ExpansionScoreRequest {
 export interface ExpansionScoreResult {
   expansion_activity_score: number;
   breakdown: Record<string, number>;
+}
+
+export interface RelationshipTimingResponse {
+  timing_score: number;
+  recommend_contact: boolean;
+  strongest_signal?: string;
+  days_until_stale?: number;
+  explanation?: string;
 }
 
 export const signalsApi = {
@@ -1096,4 +1107,6 @@ export const signalsApi = {
     requestVoid(`/signals/${id}`, { method: 'DELETE' }),
   computeExpansionScore: (data: ExpansionScoreRequest) =>
     request<ExpansionScoreResult>('/signals/score/expansion', { method: 'POST', body: JSON.stringify(data) }),
+  relationshipSuggest: (data: { signal_events: string[]; days_since_events: number[] }) =>
+    request<RelationshipTimingResponse>('/signals/relationship/suggest', { method: 'POST', body: JSON.stringify(data) }),
 };

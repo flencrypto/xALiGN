@@ -3,6 +3,7 @@
 Endpoints:
   POST   /api/v1/signals                        – Create a signal event
   GET    /api/v1/signals                        – List signal events (filterable)
+  POST   /api/v1/signals/relationship/suggest   – Relationship timing suggestion
   GET    /api/v1/signals/{id}                   – Get a single signal event
   PATCH  /api/v1/signals/{id}                   – Update a signal event
   DELETE /api/v1/signals/{id}                   – Delete a signal event
@@ -10,8 +11,10 @@ Endpoints:
 """
 
 import logging
+import math
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -19,11 +22,13 @@ from backend.models.intel import SignalEvent, SignalEventStatus, SignalEventType
 from backend.schemas.signals import (
     ExpansionScoreRequest,
     ExpansionScoreResult,
+    RelationshipTimingResponse,
     SignalEventCreate,
     SignalEventRead,
     SignalEventUpdate,
 )
 from backend.services import scoring
+from backend.services.scoring import compute_relationship_timing
 
 logger = logging.getLogger("align.signals")
 
@@ -48,6 +53,9 @@ def create_signal_event(payload: SignalEventCreate, db: Session = Depends(get_db
         description=payload.description,
         source_url=payload.source_url,
         relevance_score=payload.relevance_score,
+        strength=payload.strength,
+        decay_factor=payload.decay_factor,
+        company_intel_id=payload.company_intel_id,
         status=payload.status,
         event_date=payload.event_date,
     )
@@ -84,6 +92,43 @@ def list_signal_events(
         q = q.filter(SignalEvent.status == status)
     return q.offset(skip).limit(limit).all()
 
+
+# ── Relationship Timing ───────────────────────────────────────────────────────
+
+class RelationshipSuggestRequest(BaseModel):
+    signal_events: list[str] = Field(default_factory=list)
+    days_since_events: list[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def check_lists_same_length(self) -> "RelationshipSuggestRequest":
+        if len(self.signal_events) != len(self.days_since_events):
+            raise ValueError("signal_events and days_since_events must have same length")
+        return self
+
+
+@router.post("/relationship/suggest", response_model=RelationshipTimingResponse)
+def suggest_relationship_timing(payload: RelationshipSuggestRequest):
+    result = compute_relationship_timing(payload.signal_events, payload.days_since_events)
+    strongest = payload.signal_events[0] if payload.signal_events else None
+    days_until_stale = None
+    if result["timing_score"] > 0.30:
+        avg_lambda = 0.05
+        days_until_stale = int(math.log(result["timing_score"] / 0.30) / avg_lambda)
+    explanation = (
+        "Contact recommended based on recent signal activity."
+        if result["recommend_contact"]
+        else "No urgent outreach needed; signals are decaying."
+    )
+    return RelationshipTimingResponse(
+        timing_score=round(result["timing_score"], 4),
+        recommend_contact=result["recommend_contact"],
+        strongest_signal=strongest,
+        days_until_stale=days_until_stale,
+        explanation=explanation,
+    )
+
+
+# ── CRUD (by ID) ──────────────────────────────────────────────────────────────
 
 @router.get(
     "/{signal_id}",
