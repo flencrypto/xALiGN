@@ -329,12 +329,6 @@ def parse_and_upsert(db: Session, briefing_text: str) -> dict[str, Any]:
             estimated_value = _extract_value_millions(value_col or "") if value_col else None
 
             try:
-                tenders = await research_tenders_and_awards(
-                    keywords=keywords + [company],
-                    buyer_names=[company] if "operator" in company.lower() else None,
-                    supplier_names=[company] if any(k in company.lower() for k in ["construction", "engineering", "aeco", "mace"]) else None,
-                    region=",".join(regions) if regions else None,
-                    time_window_days=180
                 _, created = _upsert_opportunity(
                     db, account, title[:255],
                     section_text[:500] if section_text else None,

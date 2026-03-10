@@ -36,13 +36,14 @@ _ALLOWED_TYPES = {
     "application/pdf",
     "image/svg+xml",
 }
+_ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".svg"}
 
 
 def _safe_filename(original: str) -> str:
     """Generate a safe, unique filename preserving the original extension."""
-    ext = Path(original).suffix.lower()
-    allowed_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".svg"}
-    if ext not in allowed_exts:
+    ext = Path(original).name.rsplit(".", 1)
+    ext = ("." + ext[-1].lower()) if len(ext) == 2 else ""
+    if ext not in _ALLOWED_EXTS:
         ext = ".bin"
     return f"{uuid.uuid4().hex}{ext}"
 
@@ -66,11 +67,23 @@ async def upload_photo(
     Files are stored locally under the UPLOAD_DIR path.
     In production, replace local storage with S3-signed URL upload.
     """
-    if file.content_type and file.content_type not in _ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Unsupported file type: {file.content_type}. Allowed: {', '.join(_ALLOWED_TYPES)}",
-        )
+    # Validate by content_type when provided; fall back to extension check
+    # when the client does not supply a MIME type.
+    original_name = file.filename or "upload.bin"
+    ext = ("." + original_name.rsplit(".", 1)[-1].lower()) if "." in original_name else ""
+    if file.content_type:
+        if file.content_type not in _ALLOWED_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f"Unsupported file type: {file.content_type}. Allowed: {', '.join(sorted(_ALLOWED_TYPES))}",
+            )
+    else:
+        # No content-type header – validate by file extension as a fallback.
+        if ext not in _ALLOWED_EXTS:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f"Unsupported file extension: {ext!r}. Allowed: {', '.join(sorted(_ALLOWED_EXTS))}",
+            )
 
     content = await file.read()
     if len(content) > _MAX_SIZE_BYTES:
@@ -137,7 +150,10 @@ def download_photo(photo_id: int, db: Session = Depends(get_db)):
     obj = db.get(UploadedPhoto, photo_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Photo not found")
-    path = Path(obj.storage_path)
+    # Resolve path via the safe filename only (Path.name strips any directory
+    # components), preventing path traversal through a tampered storage_path.
+    safe_name = Path(obj.filename).name
+    path = _UPLOAD_DIR / safe_name
     if not path.exists():
         raise HTTPException(status_code=404, detail="File not found on disk")
     return FileResponse(
@@ -156,7 +172,8 @@ def delete_photo(photo_id: int, db: Session = Depends(get_db)):
     obj = db.get(UploadedPhoto, photo_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Photo not found")
-    path = Path(obj.storage_path)
+    safe_name = Path(obj.filename).name
+    path = _UPLOAD_DIR / safe_name
     if path.exists():
         try:
             path.unlink()

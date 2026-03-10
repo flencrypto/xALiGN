@@ -410,3 +410,172 @@ model UserSettings {
   value      String?
   updated_at DateTime @updatedAt
 }
+
+// ── Intelligence Collection Layer (Batch 1) ───────────────────────────────────
+
+model DailyBriefing {
+  id                       Int      @id @default(autoincrement())
+  title                    String
+  // Valid values: daily_intelligence_briefing
+  briefing_type            String   @default("daily_intelligence_briefing")
+  full_text                String
+  briefing_date            String?
+  accounts_updated         Int      @default(0)
+  opportunities_created    Int      @default(0)
+  trigger_signals_created  Int      @default(0)
+  created_at               DateTime @default(now())
+}
+
+model NewsArticle {
+  id               Int      @id @default(autoincrement())
+  title            String
+  url              String?
+  source_name      String?
+  summary          String?
+  full_text        String?
+  // Valid values: data_centre, hyperscaler, supplier, ai_infrastructure, power_infrastructure, chips, general
+  category         String   @default("general")
+  keywords_matched String?
+  published_at     String?
+  // Valid values: rss, api, scrape
+  source_type      String   @default("rss")
+  confidence_score Float?
+  signal_type      String?
+  fetched_at       DateTime @default(now())
+}
+
+model PlanningApplication {
+  id               Int      @id @default(autoincrement())
+  reference        String?
+  title            String
+  description      String?
+  applicant        String?
+  location         String?
+  latitude         Float?
+  longitude        Float?
+  portal_name      String?
+  portal_url       String?
+  // Valid values: submitted, pending, approved, refused, withdrawn
+  status           String   @default("pending")
+  application_date String?
+  decision_date    String?
+  is_data_centre   Boolean  @default(false)
+  documents        String?
+  detected_at      DateTime @default(now())
+}
+
+model VendorPressRelease {
+  id                 Int      @id @default(autoincrement())
+  vendor_name        String
+  title              String
+  url                String?
+  summary            String?
+  full_text          String?
+  published_at       String?
+  extracted_entities String?
+  related_suppliers  String?
+  project_signals    String?
+  fetched_at         DateTime @default(now())
+}
+
+model JobPostingSignal {
+  id                  Int      @id @default(autoincrement())
+  company_name        String
+  job_title           String
+  location            String?
+  latitude            Float?
+  longitude           Float?
+  job_count           Int      @default(1)
+  posting_url         String?
+  source_board        String?
+  is_spike            Boolean  @default(false)
+  spike_factor        Float?
+  is_expansion_signal Boolean  @default(false)
+  detected_at         DateTime @default(now())
+  posted_at           String?
+}
+
+model InfrastructureAnnouncement {
+  id                Int      @id @default(autoincrement())
+  title             String
+  source_name       String?
+  source_url        String?
+  summary           String?
+  // Valid values: power_grid, fibre, energy_deal, substation, data_centre, general
+  announcement_type String   @default("general")
+  location          String?
+  operator          String?
+  capacity_mw       Float?
+  project_value_gbp Float?
+  keywords_matched  String?
+  published_at      String?
+  confidence_score  Float?
+  signal_type       String?
+  detected_at       DateTime @default(now())
+}
+
+// ── Intelligence Database Layer (Batch 3) ─────────────────────────────────────
+
+model InfrastructureProject {
+  id                  Int      @id @default(autoincrement())
+  name                String
+  company             String?
+  location            String?
+  latitude            Float?
+  longitude           Float?
+  capacity_mw         Float?
+  capex_millions      Float?
+  capex_currency      String?  @default("GBP")
+  // Valid values: announced, planning, approved, construction, operational, cancelled
+  stage               String   @default("announced")
+  // Valid values: new_build, expansion, upgrade, energy_deal, acquisition, general
+  project_type        String   @default("general")
+  partners            String?
+  source_url          String?
+  source_name         String?
+  confidence_score    Float?
+  signal_type         String?
+  is_duplicate        Boolean  @default(false)
+  canonical_project_id Int?
+  notes               String?
+  detected_at         DateTime @default(now())
+  updated_at          DateTime @updatedAt
+}
+
+model CompanyProfile {
+  id                  Int      @id @default(autoincrement())
+  name                String
+  // Valid values: hyperscaler, colocation, enterprise, developer, operator, supplier, contractor, utility
+  category            String   @default("operator")
+  headquarters        String?
+  stock_ticker        String?
+  website             String?
+  known_partners      String?
+  total_capacity_mw   Float?
+  total_capex_millions Float?
+  active_projects     Int?     @default(0)
+  regions_active      String?
+  description         String?
+  notes               String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+}
+
+model OpportunitySignal {
+  id                        Int      @id @default(autoincrement())
+  project_id                Int?
+  // Valid values: new_build, expansion, m_and_e_fit_out, energy_deal, maintenance, upgrade, decommission
+  opportunity_type          String   @default("new_build")
+  title                     String
+  company                   String?
+  location                  String?
+  potential_suppliers       String?
+  likelihood_score          Float?
+  estimated_value_millions  Float?
+  estimated_tender_date     String?
+  source_signal_url         String?
+  notes                     String?
+  is_actioned               Boolean  @default(false)
+  detected_at               DateTime @default(now())
+  updated_at                DateTime @updatedAt
+}

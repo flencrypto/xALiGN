@@ -7,6 +7,7 @@ Never accesses pages behind authentication walls.
 import ipaddress
 import logging
 import re
+import socket
 from urllib.parse import urlparse
 
 import httpx
@@ -35,11 +36,24 @@ _PRIVATE_NETWORKS = [
 ]
 
 
+def _is_private_ip(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """Return True if the address belongs to a private, loopback, link-local, or reserved range."""
+    if addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_multicast:
+        return True
+    for network in _PRIVATE_NETWORKS:
+        if addr in network:
+            return True
+    return False
+
+
 def _validate_url(url: str) -> None:
     """
     Validate that the URL targets a public, external host.
 
     Raises ValueError for private/loopback addresses to prevent SSRF.
+
+    Uses ``socket.getaddrinfo`` to resolve hostnames so that DNS rebinding
+    attacks and hostnames that alias private IPs are also blocked.
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
@@ -52,18 +66,24 @@ def _validate_url(url: str) -> None:
     if hostname.lower() in _BLOCKED_HOSTS:
         raise ValueError(f"Requests to {hostname!r} are not allowed.")
 
-    # Block numeric private IPs
+    # Resolve the hostname (or parse it as a literal IP) and check every
+    # returned address against private/reserved ranges.
     try:
-        addr = ipaddress.ip_address(hostname)
-        for network in _PRIVATE_NETWORKS:
-            if addr in network:
-                raise ValueError(f"Requests to private IP range {network} are not allowed.")
-        if addr.is_loopback or addr.is_link_local or addr.is_reserved:
-            raise ValueError(f"Requests to reserved/loopback addresses are not allowed.")
-    except ValueError as exc:
-        # Re-raise SSRF errors; ignore "not a valid IP" which means it's a hostname
-        if "not allowed" in str(exc) or "Unsupported" in str(exc) or "must include" in str(exc):
-            raise
+        results = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        # If DNS resolution fails, block the request rather than allow it.
+        raise ValueError(f"Could not resolve hostname {hostname!r}.")
+
+    for _family, _type, _proto, _canonname, sockaddr in results:
+        ip_str = sockaddr[0]
+        try:
+            addr = ipaddress.ip_address(ip_str)
+        except ValueError:
+            continue
+        if _is_private_ip(addr):
+            raise ValueError(
+                f"Requests to {hostname!r} are not allowed (resolves to private/reserved address {ip_str})."
+            )
 
 
 def _strip_html(html: str) -> str:
