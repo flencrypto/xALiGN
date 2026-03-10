@@ -6,7 +6,7 @@ metadata:
     app: align
     tier: backend
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: align
@@ -20,6 +20,7 @@ spec:
       containers:
         - name: backend
           image: align-backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           env:
@@ -38,6 +39,8 @@ spec:
                 configMapKeyRef:
                   name: align-config
                   key: CORS_ORIGINS
+            - name: ENABLE_SCHEDULER
+              value: "false"
           resources:
             requests:
               cpu: "250m"
@@ -51,12 +54,21 @@ spec:
               port: 8000
             initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /app/uploads
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: align-shared-pvc
 ---
 apiVersion: v1
 kind: Service

@@ -220,8 +220,8 @@ class SignalEvent(Base):
     description: Mapped[str | None] = mapped_column(Text)
     source_url: Mapped[str | None] = mapped_column(String(2048))
     relevance_score: Mapped[float | None] = mapped_column(Float)
-    strength: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
-    decay_factor: Mapped[float] = mapped_column(Float, nullable=False, default=0.05)
+    strength: Mapped[float] = mapped_column(Float, nullable=False, default=1.0, server_default="1.0")
+    decay_factor: Mapped[float] = mapped_column(Float, nullable=False, default=0.05, server_default="0.05")
     company_intel_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("company_intel.id", ondelete="SET NULL"), nullable=True, index=True
     )

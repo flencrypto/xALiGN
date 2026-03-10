@@ -137,8 +137,9 @@ def _cpi_norm(cpi: float | None) -> float:
 
 # ── Relationship Timing Score ─────────────────────────────────────────────────
 
-# Decay constants (λ) per signal type – higher = faster decay
-_SIGNAL_DECAY: dict[str, float] = {
+# Decay constants (λ) per signal type – higher = faster decay.
+# Exported so callers (e.g. routers) can use the same values without duplication.
+SIGNAL_DECAY: dict[str, float] = {
     "contract_win": 0.05,
     "expansion": 0.04,
     "charity_event": 0.07,
@@ -147,9 +148,12 @@ _SIGNAL_DECAY: dict[str, float] = {
     "new_role": 0.03,
     "funding_round": 0.04,
 }
+# Keep private alias for backward compatibility inside this module
+_SIGNAL_DECAY = SIGNAL_DECAY
 
-# Importance weights per signal type
-_SIGNAL_IMPORTANCE: dict[str, float] = {
+# Importance weights per signal type.
+# Exported so callers can use the same values without duplication.
+SIGNAL_IMPORTANCE: dict[str, float] = {
     "contract_win": 1.0,
     "expansion": 0.9,
     "charity_event": 0.5,
@@ -158,6 +162,7 @@ _SIGNAL_IMPORTANCE: dict[str, float] = {
     "new_role": 0.8,
     "funding_round": 0.9,
 }
+_SIGNAL_IMPORTANCE = SIGNAL_IMPORTANCE
 
 _CONTACT_THRESHOLD = 0.30
 
@@ -233,47 +238,3 @@ def compute_expansion_activity_score(
     }
 
 
-def expansion_activity_score(
-    capex_signals: int = 0,
-    regional_expansions: int = 0,
-    hiring_count: int = 0,
-    facility_changes: int = 0,
-    ai_indicators: int = 0,
-) -> dict:
-    """Weighted 0–10 expansion activity scorer.
-
-    Weights:
-      capex      30%
-      regions    20%
-      hiring     20%
-      facility   20%
-      AI         10%
-
-    Each dimension is normalised to [0, 1] before weighting, then the
-    composite is scaled to [0, 10].
-    """
-    capex_score = min(capex_signals / 5.0, 1.0)
-    region_score = min(regional_expansions / 10.0, 1.0)
-    hiring_score = min(hiring_count / 50.0, 1.0)
-    facility_score = min(facility_changes / 5.0, 1.0)
-    ai_score = min(ai_indicators / 10.0, 1.0)
-
-    composite = (
-        0.30 * capex_score
-        + 0.20 * region_score
-        + 0.20 * hiring_score
-        + 0.20 * facility_score
-        + 0.10 * ai_score
-    )
-    score_0_10 = round(composite * 10, 2)
-
-    return {
-        "score": score_0_10,
-        "breakdown": {
-            "capex_contribution": round(0.30 * capex_score * 10, 2),
-            "region_contribution": round(0.20 * region_score * 10, 2),
-            "hiring_contribution": round(0.20 * hiring_score * 10, 2),
-            "facility_contribution": round(0.20 * facility_score * 10, 2),
-            "ai_contribution": round(0.10 * ai_score * 10, 2),
-        },
-    }

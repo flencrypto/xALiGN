@@ -18,11 +18,11 @@ logger = logging.getLogger("align.worker")
 async def _main() -> None:
     from backend.services.scheduler import scheduler, setup_scheduler
 
-    # setup_scheduler accepts a FastAPI app object only to register lifespan
-    # hooks; passing None is safe because the worker manages its own lifecycle.
+    # setup_scheduler registers all jobs AND starts the scheduler internally.
+    # Passing None for the app argument is safe; the app ref is reserved for
+    # future lifespan hooks and is not used by the scheduler itself.
     setup_scheduler(None)  # type: ignore[arg-type]
 
-    scheduler.start()
     logger.info("Worker scheduler started – waiting for jobs…")
     try:
         while True:

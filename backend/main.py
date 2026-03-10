@@ -57,7 +57,10 @@ async def lifespan(app: FastAPI):
     run_migrations()
     logger.info("Database ready.")
     run_seed()
-    setup_scheduler(app)
+    if settings.ENABLE_SCHEDULER:
+        setup_scheduler(app)
+    else:
+        logger.info("Scheduler disabled (ENABLE_SCHEDULER=false); worker pod handles scheduling.")
     yield
     logger.info("aLiGN shutting down.")
 

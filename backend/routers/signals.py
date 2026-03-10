@@ -28,7 +28,10 @@ from backend.schemas.signals import (
     SignalEventUpdate,
 )
 from backend.services import scoring
-from backend.services.scoring import compute_relationship_timing
+from backend.services.scoring import (
+    SIGNAL_DECAY as _SIGNAL_DECAY,
+    SIGNAL_IMPORTANCE as _SIGNAL_IMPORTANCE,
+)
 
 logger = logging.getLogger("align.signals")
 
@@ -110,60 +113,40 @@ class RelationshipSuggestRequest(BaseModel):
         return self
 
 
-# Per-type decay constants mirrored from scoring service (used to compute staleness)
-_DECAY_LAMBDA: dict[str, float] = {
-    "contract_win": 0.05,
-    "expansion": 0.04,
-    "charity_event": 0.07,
-    "conference": 0.06,
-    "executive_post": 0.10,
-    "new_role": 0.03,
-    "funding_round": 0.04,
-}
-_IMPORTANCE: dict[str, float] = {
-    "contract_win": 1.0,
-    "expansion": 0.9,
-    "charity_event": 0.5,
-    "conference": 0.6,
-    "executive_post": 0.4,
-    "new_role": 0.8,
-    "funding_round": 0.9,
-}
-
-
 @router.post("/relationship/suggest", response_model=RelationshipTimingResponse)
 def suggest_relationship_timing(payload: RelationshipSuggestRequest):
-    result = compute_relationship_timing(payload.signal_events, payload.days_since_events)
+    # Compute per-event raw contributions (decay × importance) once, reuse below
+    per_event: list[tuple[str, float, float]] = []  # (event_name, lam, raw_weight)
+    total_score_raw = 0.0
+    for event, days in zip(payload.signal_events, payload.days_since_events):
+        lam = _SIGNAL_DECAY.get(event, 0.05)
+        importance = _SIGNAL_IMPORTANCE.get(event, 0.5)
+        w = math.exp(-lam * days) * importance
+        per_event.append((event, lam, w))
+        total_score_raw += w
 
-    # Determine strongest signal by per-event weighted contribution
+    # Normalised timing score (matches compute_relationship_timing's /3.0 cap)
+    normalised = min(total_score_raw / 3.0, 1.0)
+    result = {
+        "timing_score": round(normalised, 4),
+        "recommend_contact": normalised >= _STALE_THRESHOLD,
+    }
+
+    # Strongest signal: event with the highest individual weighted contribution
     strongest: str | None = None
-    if payload.signal_events:
-        best_weight = -1.0
-        for event, days in zip(payload.signal_events, payload.days_since_events):
-            lam = _DECAY_LAMBDA.get(event, 0.05)
-            importance = _IMPORTANCE.get(event, 0.5)
-            w = math.exp(-lam * days) * importance
-            if w > best_weight:
-                best_weight = w
-                strongest = event
+    if per_event:
+        strongest = max(per_event, key=lambda t: t[2])[0]
 
-    # Compute days until score decays below stale threshold using per-event λ
+    # Days until score decays below _STALE_THRESHOLD using effective λ (contribution-weighted).
+    # total_score_raw(d) ≈ total_score_raw * exp(-λ_eff * d)
+    # Solve: total_score_raw * exp(-λ_eff * d) / 3.0 = _STALE_THRESHOLD
+    #   → d = -ln(_STALE_THRESHOLD * 3.0 / total_score_raw) / λ_eff
     days_until_stale: int | None = None
-    if result["timing_score"] >= _STALE_THRESHOLD and payload.signal_events:
-        # For the strongest signal, find days d where exp(-λ*d)*importance = threshold
-        # d = -ln(threshold / importance) / λ  (from current 0 days → days from now = d - current_days)
-        candidates: list[int] = []
-        for event, days in zip(payload.signal_events, payload.days_since_events):
-            lam = _DECAY_LAMBDA.get(event, 0.05)
-            importance = _IMPORTANCE.get(event, 0.5)
-            threshold_weight = _STALE_THRESHOLD * importance
-            if threshold_weight > 0 and importance > 0:
-                stale_abs = -math.log(threshold_weight / importance) / lam
-                remaining = int(stale_abs - days)
-                if remaining > 0:
-                    candidates.append(remaining)
-        if candidates:
-            days_until_stale = min(candidates)
+    threshold_raw = _STALE_THRESHOLD * 3.0
+    if total_score_raw > threshold_raw and per_event:
+        lambda_eff = sum(lam * w for _, lam, w in per_event) / total_score_raw
+        if lambda_eff > 0:
+            days_until_stale = max(0, int(-math.log(threshold_raw / total_score_raw) / lambda_eff))
 
     explanation = (
         "Contact recommended based on recent signal activity."
@@ -171,7 +154,7 @@ def suggest_relationship_timing(payload: RelationshipSuggestRequest):
         else "No urgent outreach needed; signals are decaying."
     )
     return RelationshipTimingResponse(
-        timing_score=round(result["timing_score"], 4),
+        timing_score=result["timing_score"],
         recommend_contact=result["recommend_contact"],
         strongest_signal=strongest,
         days_until_stale=days_until_stale,

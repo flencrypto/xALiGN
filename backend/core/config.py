@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
 
-    # Gmail Integration (for auto-fetching briefings)
+    # Scheduler – set to False when a dedicated worker pod manages scheduling
+    ENABLE_SCHEDULER: bool = True
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REFRESH_TOKEN: str = ""  # Generate via OAuth flow
