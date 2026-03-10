@@ -118,7 +118,7 @@ export default function DashboardPage() {
         {/* ── Hero Stats Row ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((card, i) => (
-            <div key={card.label} className={`metric-card p-5 fade-in-up delay-${i + 1}`}>
+            <div key={card.label} className="metric-card p-5 fade-in-up" style={{ animationDelay: `${(i + 1) * 0.05}s` }}>
               <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} rounded-[inherit] pointer-events-none`} />
               <div className="relative">
                 <div className="flex items-center justify-between mb-3">
@@ -192,7 +192,8 @@ export default function DashboardPage() {
                   return (
                     <li
                       key={i}
-                      className={`flex items-center gap-3 p-3 rounded-xl row-hover fade-in-up delay-${Math.min(i + 1, 8)}`}
+                      className="flex items-center gap-3 p-3 rounded-xl row-hover fade-in-up"
+                      style={{ animationDelay: `${Math.min((i + 1) * 0.05, 0.4)}s` }}
                     >
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${icon.bg}`}>
                         <icon.Icon size={15} />
@@ -223,7 +224,8 @@ export default function DashboardPage() {
                 <Link
                   key={action.href}
                   href={action.href}
-                  className={`group action-card p-4 fade-in-up delay-${Math.min(i + 1, 8)}`}
+                  className="group action-card p-4 fade-in-up"
+                  style={{ animationDelay: `${Math.min((i + 1) * 0.05, 0.4)}s` }}
                 >
                   <div className="absolute inset-0 holo-shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                   <div className="relative">

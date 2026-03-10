@@ -90,7 +90,7 @@ export default function CapacityDashboardPage() {
                   <Tooltip
                     contentStyle={{ background: '#1a1a2e', border: '1px solid #2a2a3a', borderRadius: 8 }}
                     labelStyle={{ color: '#fff' }}
-                    formatter={(v: number | undefined) => [`${(v ?? 0).toLocaleString()} MW`, 'Capacity']}
+                    formatter={(v) => [`${(isNaN(Number(v)) ? 0 : Number(v)).toLocaleString()} MW`, 'Capacity']}
                   />
                   <Bar dataKey="capacity_mw" fill="#4fc3f7" radius={[0, 4, 4, 0]} />
                 </BarChart>

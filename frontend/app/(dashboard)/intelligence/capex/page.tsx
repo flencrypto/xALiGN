@@ -78,7 +78,7 @@ export default function CapexTrackerPage() {
                   <YAxis type="category" dataKey="company" tick={{ fill: '#ccc', fontSize: 11 }} width={100} />
                   <Tooltip
                     contentStyle={{ background: '#1a1a2e', border: '1px solid #2a2a3a', borderRadius: 8 }}
-                    formatter={(v: number | undefined) => [`£${(v ?? 0).toLocaleString()}M`, 'Capex']}
+                    formatter={(v) => [`£${(isNaN(Number(v)) ? 0 : Number(v)).toLocaleString()}M`, 'Capex']}
                   />
                   <Bar dataKey="capex" fill="#ffb74d" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -101,7 +101,7 @@ export default function CapexTrackerPage() {
                   <YAxis tick={{ fill: '#888', fontSize: 11 }} unit="M" />
                   <Tooltip
                     contentStyle={{ background: '#1a1a2e', border: '1px solid #2a2a3a', borderRadius: 8 }}
-                    formatter={(v: number | undefined) => [`£${(v ?? 0).toLocaleString()}M`, 'Capex']}
+                    formatter={(v) => [`£${(isNaN(Number(v)) ? 0 : Number(v)).toLocaleString()}M`, 'Capex']}
                   />
                   <Bar dataKey="capex" fill="#81c784" radius={[4, 4, 0, 0]} />
                 </BarChart>

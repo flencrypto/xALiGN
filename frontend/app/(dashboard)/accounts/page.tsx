@@ -294,7 +294,7 @@ export default function AccountsPage() {
             <div className="space-y-3">{[...Array(6)].map((_, i) => <div key={i} className="shimmer h-16 rounded-xl" />)}</div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20 fade-in">
-              <div className="radar-ping mx-auto mb-4" />
+              <div className="radar-ping mx-auto mb-4 w-12 h-12" />
               <Building2 className="w-12 h-12 text-text-faint mx-auto mb-3" />
               <p className="text-text-muted">No accounts found. Add your first account or import from CSV.</p>
             </div>
@@ -326,7 +326,7 @@ export default function AccountsPage() {
                           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-color-border-subtle flex items-center justify-center flex-shrink-0 overflow-hidden group-hover:border-primary/40 group-hover:shadow-glow transition-all">
                             {acc.logo_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={acc.logo_url} alt="" className="w-full h-full object-contain" />
+                              <img src={acc.logo_url} alt={`${acc.name} logo`} className="w-full h-full object-contain" />
                             ) : (
                               <Building2 className="w-4 h-4 text-primary" />
                             )}

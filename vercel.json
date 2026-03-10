@@ -11,18 +11,6 @@
     }
   },
   "env": {
-    "NEXT_PUBLIC_API_URL": {
-      "description": "Backend API URL (e.g., https://your-backend.railway.app/api/v1)",
-      "required": true
-    },
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": {
-      "description": "Clerk Publishable Key (pk_test_... or pk_live_...)",
-      "required": true
-    },
-    "CLERK_SECRET_KEY": {
-      "description": "Clerk Secret Key (sk_test_... or sk_live_...)",
-      "required": true
-    },
     "NEXT_PUBLIC_CLERK_SIGN_IN_URL": {
       "value": "/sign-in"
     },

@@ -65,7 +65,7 @@ export default function IntelMap({ projects, stageColors }: Props) {
     const markers: Leaflet.CircleMarker[] = [];
 
     projects
-      .filter((p) => p.latitude && p.longitude)
+      .filter((p) => p.latitude != null && p.longitude != null)
       .forEach((p) => {
         const color = stageColors[p.stage || ''] || '#888';
         const radius = p.capacity_mw
