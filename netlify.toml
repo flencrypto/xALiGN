@@ -35,6 +35,15 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# ── Fetch external feeds (required inputs for netlify-plugin-fetch-feeds) ────
+# This plugin is installed via the Netlify UI; required inputs are provided here.
+# Update `feeds` with the actual RSS/Atom feed URLs you want to cache.
+[[plugins]]
+  package = "netlify-plugin-fetch-feeds"
+  [plugins.inputs]
+    dataDir = "src/_data/feeds"
+    feeds   = []
+
 # ── Headers (optional – add any you need) ────────────────────────────────────
 [[headers]]
   for = "/*"
