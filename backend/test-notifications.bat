@@ -38,7 +38,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Run the test suite
-python tests\test_notifications.py
+python tests\check_notifications.py
 
 if %ERRORLEVEL% EQU 0 (
     echo.

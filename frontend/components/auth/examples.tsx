@@ -11,6 +11,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useAuth, useUser } from '@clerk/nextjs'
 
 /**
@@ -81,7 +82,7 @@ export function UserProfileCard() {
  */
 export function BidActionButtons({ bidId }: { bidId: string }) {
   const { has, isLoaded } = useAuth()
-  void bidId
+  const router = useRouter()
 
   if (!isLoaded) {
     return <div>Loading permissions...</div>
@@ -91,8 +92,11 @@ export function BidActionButtons({ bidId }: { bidId: string }) {
     <div className="flex gap-2">
       {/* Only show if user has bid read permission */}
       {has({ permission: 'org:bid:read' }) && (
-        <button className="btn btn-secondary">
-          View Bid {bidId}
+        <button
+          className="btn btn-secondary"
+          onClick={() => router.push(`/dashboard/bids/${bidId}`)}
+        >
+          View Bid
         </button>
       )}
 
