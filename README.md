@@ -1,4 +1,4 @@
-# aLiGN
+# XALiGn
 
 **AI-native Bid + Delivery OS for Data Centre Refurbs & New Builds**
 
