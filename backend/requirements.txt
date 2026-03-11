@@ -21,6 +21,7 @@ openpyxl==3.1.5
 
 # Auth (JWT verification for Clerk / Auth0)
 python-jose[cryptography]==3.3.0
+PyJWT==2.8.0
 
 # PostgreSQL driver (production)
 psycopg2-binary==2.9.9

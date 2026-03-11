@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     WEBHOOK_SECRET: str = "your-super-secret-key-here"  # Change in production!
 
     # Authentication  (none | clerk | auth0)
-    AUTH_PROVIDER: str = "clerk"
+    AUTH_PROVIDER: str = "none"
     CLERK_ISSUER: str = ""
     CLERK_JWKS_URL: str = ""
     AUTH0_DOMAIN: str = ""
