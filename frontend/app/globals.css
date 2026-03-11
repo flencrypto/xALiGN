@@ -119,6 +119,12 @@
     box-shadow: 0 0 20px 0 rgb(var(--color-primary) / 0.40);
   }
 
+  .neon-glow {
+    box-shadow:
+      0 0 8px rgb(var(--color-primary) / 0.35),
+      0 0 20px rgb(var(--color-primary) / 0.15);
+  }
+
   .glass-panel {
     background-color: rgb(var(--color-surface) / 0.80);
     backdrop-filter: blur(12px);
